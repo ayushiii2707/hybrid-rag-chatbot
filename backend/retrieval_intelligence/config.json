@@ -1,0 +1,17 @@
+{
+  "min_confidence_threshold": 0.45,
+  "high_confidence_threshold": 0.80,
+  "weights": {
+    "semantic": 0.55,
+    "keyword": 0.12,
+    "entity": 0.08,
+    "metadata": 0.08,
+    "quality": 0.04,
+    "answer_type": 0.07,
+    "answerability": 0.06
+  },
+  "metadata_boosts": {
+    "validation_rule_keywords": ["validation", "rules", "format", "must", "should", "mandatory"],
+    "boost_value": 0.10
+  }
+}

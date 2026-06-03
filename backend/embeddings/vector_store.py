@@ -1,0 +1,257 @@
+import json
+import logging
+import os
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional
+import numpy as np
+import faiss
+
+logger = logging.getLogger(__name__)
+
+
+class BaseVectorStore(ABC):
+    """
+    Abstract Base Class defining the contract for all Vector Store implementations.
+    This guarantees that swapping FAISS out for Pinecone/Qdrant/Weaviate in the future
+    requires zero changes to downstream retrieval logic.
+    """
+
+    @abstractmethod
+    def add_embeddings(self, embeddings: np.ndarray, metadata: List[Dict[str, Any]]) -> None:
+        """Adds a batch of embeddings and their companion metadata dicts to the store."""
+        pass
+
+    @abstractmethod
+    def search(self, query_embedding: np.ndarray, top_k: int = 5) -> List[Dict[str, Any]]:
+        """Searches the vector store for the closest embeddings to the query_embedding."""
+        pass
+
+    @abstractmethod
+    def save_index(self, index_path: Optional[str] = None, metadata_path: Optional[str] = None) -> None:
+        """Persists the database/index to disk."""
+        pass
+
+    @abstractmethod
+    def load_index(self, index_path: Optional[str] = None, metadata_path: Optional[str] = None) -> None:
+        """Loads a persisted database/index from disk."""
+        pass
+
+
+class FAISSVectorStore(BaseVectorStore):
+    """
+    A concrete Vector Store implementation using FAISS for local vector index execution
+    and a JSON sidecar file for metadata tracking.
+    """
+
+    def __init__(self, config_path: str = None) -> None:
+        """
+        Initializes the FAISSVectorStore. Loads storage configurations from config.json.
+        """
+        self.index_path = "backend/embeddings/faiss_index.bin"
+        self.metadata_path = "backend/embeddings/metadata.json"
+
+        # Load paths from config
+        if config_path is None:
+            config_path = os.path.join(os.path.dirname(__file__), "config.json")
+
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config_data = json.load(f)
+                store_config = config_data.get("vector_store", {})
+                self.index_path = store_config.get("index_path", self.index_path)
+                self.metadata_path = store_config.get("metadata_path", self.metadata_path)
+                logger.info("Loaded FAISSVectorStore configuration from config.json.")
+            except Exception as e:
+                logger.warning(f"Could not load vector store settings from config: {e}")
+
+        # Resolve paths to absolute relative to workspace root (which corresponds to CWD)
+        self.index_path = os.path.abspath(self.index_path)
+        self.metadata_path = os.path.abspath(self.metadata_path)
+
+        # In-memory structures
+        self.index: Optional[faiss.Index] = None
+        self.metadata_list: List[Dict[str, Any]] = []
+        self.indexed_chunk_ids = set()
+
+    def add_embeddings(self, embeddings: np.ndarray, metadata: List[Dict[str, Any]]) -> None:
+        """
+        Adds a batch of embeddings and metadata to FAISS index with duplicate vector checks.
+
+        Args:
+            embeddings (np.ndarray): 2D float32 numpy array of embeddings.
+            metadata (List[Dict[str, Any]]): List of metadata mappings matching indices of embeddings.
+        """
+        if len(embeddings) != len(metadata):
+            raise ValueError(
+                f"Mismatch in count: {len(embeddings)} embeddings vs {len(metadata)} metadata items."
+            )
+
+        # 1. Filter out duplicate chunk IDs
+        new_embeddings_list = []
+        new_metadata_list = []
+
+        for i, meta in enumerate(metadata):
+            chunk_id = meta.get("chunk_id")
+            if not chunk_id:
+                logger.warning(f"Metadata item at index {i} is missing 'chunk_id'. Skipping.")
+                continue
+
+            if chunk_id in self.indexed_chunk_ids:
+                logger.debug(f"Chunk '{chunk_id}' is already indexed. Skipping.")
+                continue
+
+            new_embeddings_list.append(embeddings[i])
+            new_metadata_list.append(meta)
+
+        if not new_embeddings_list:
+            logger.info("All chunks in batch are already indexed. No new vectors added.")
+            return
+
+        new_embeddings_np = np.array(new_embeddings_list, dtype=np.float32)
+
+        # 2. Lazy instantiation of the Index
+        if self.index is None:
+            dimension = new_embeddings_np.shape[1]
+            # IndexFlatIP (Inner Product) on L2 normalized vectors is equivalent to Cosine Similarity.
+            self.index = faiss.IndexFlatIP(dimension)
+            logger.info(f"Instantiated FAISS IndexFlatIP with dimension {dimension}.")
+
+        # 3. Normalize vectors in-place
+        faiss.normalize_L2(new_embeddings_np)
+
+        # 4. Add to FAISS index
+        self.index.add(new_embeddings_np)
+
+        # 5. Maintain metadata mapping and duplicate check tracking
+        for meta in new_metadata_list:
+            self.metadata_list.append(meta)
+            self.indexed_chunk_ids.add(meta["chunk_id"])
+
+        logger.info(
+            f"Successfully indexed {len(new_metadata_list)} new vectors. "
+            f"Total index size: {self.index.ntotal}."
+        )
+
+    def search(self, query_embedding: np.ndarray, top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        Searches the FAISS index using L2-normalized Inner Product (Cosine Similarity).
+
+        Args:
+            query_embedding (np.ndarray): 1D or 2D array representing the query embedding vector.
+            top_k (int): Number of nearest neighbors to retrieve.
+
+        Returns:
+            List[Dict[str, Any]]: Retrieved matching documents with scores and metadata mappings.
+        """
+        if self.index is None or self.index.ntotal == 0:
+            logger.warning("Search called on an empty index.")
+            return []
+
+        # Enforce 2D array representation
+        query_np = np.array(query_embedding, dtype=np.float32).reshape(1, -1)
+        
+        # L2 normalization to compute cosine similarity under Inner Product (IP) index
+        faiss.normalize_L2(query_np)
+
+        # Execute search
+        scores, indices = self.index.search(query_np, top_k)
+
+        results = []
+        # scores[0] contains the scores for the first (and only) query
+        for score, idx in zip(scores[0], indices[0]):
+            # -1 signifies no match found or out of bounds (padding by FAISS)
+            if idx == -1:
+                continue
+
+            if idx < 0 or idx >= len(self.metadata_list):
+                logger.error(f"FAISS index '{idx}' out of bounds of metadata list (length {len(self.metadata_list)}).")
+                continue
+
+            meta = self.metadata_list[idx]
+            results.append({
+                "chunk_id": meta["chunk_id"],
+                "text": meta.get("text", ""),
+                "score": float(score),
+                "metadata": {
+                    "doc_id": meta.get("doc_id"),
+                    "source_file": meta.get("source_file"),
+                    "page_number": meta.get("page_number"),
+                    "char_count": meta.get("metadata", {}).get("char_count")
+                }
+            })
+
+        return results
+
+    def save_index(self, index_path: Optional[str] = None, metadata_path: Optional[str] = None) -> None:
+        """
+        Saves the FAISS index binary and metadata JSON file.
+        """
+        idx_p = os.path.abspath(index_path or self.index_path)
+        meta_p = os.path.abspath(metadata_path or self.metadata_path)
+
+        if self.index is None:
+            logger.warning("Attempted to save an uninitialized index. Saving operation skipped.")
+            return
+
+        # Ensure parent directories exist
+        os.makedirs(os.path.dirname(idx_p), exist_ok=True)
+        os.makedirs(os.path.dirname(meta_p), exist_ok=True)
+
+        try:
+            faiss.write_index(self.index, idx_p)
+            with open(meta_p, "w", encoding="utf-8") as f:
+                json.dump(self.metadata_list, f, indent=2)
+            logger.info(f"Successfully saved FAISS index to {idx_p} and metadata to {meta_p}.")
+        except Exception as e:
+            logger.error(f"Failed to persist index files to disk: {e}")
+            raise IOError("Vector store persistence failed.") from e
+
+    def load_index(self, index_path: Optional[str] = None, metadata_path: Optional[str] = None) -> None:
+        """
+        Loads the FAISS index binary and metadata JSON from disk, restoring duplicate filters.
+        """
+        idx_p = os.path.abspath(index_path or self.index_path)
+        meta_p = os.path.abspath(metadata_path or self.metadata_path)
+
+        if not os.path.exists(idx_p) or not os.path.exists(meta_p):
+            logger.info("Persisted index files do not exist. Index starts empty.")
+            return
+
+        try:
+            self.index = faiss.read_index(idx_p)
+            with open(meta_p, "r", encoding="utf-8") as f:
+                self.metadata_list = json.load(f)
+
+            # Rebuild duplicate validation structure
+            self.indexed_chunk_ids = {meta["chunk_id"] for meta in self.metadata_list}
+
+            # Alignment guard validation
+            assert self.index.ntotal == len(self.metadata_list), (
+                f"Index/metadata alignment mismatch: index contains {self.index.ntotal} vectors "
+                f"but metadata file lists {len(self.metadata_list)} items."
+            )
+
+            logger.info(
+                f"Successfully loaded index and metadata. "
+                f"Restored index size: {self.index.ntotal}."
+            )
+        except Exception as e:
+            logger.error(f"Failed to load index from disk: {e}")
+            raise IOError("Vector store loading failed.") from e
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    store = FAISSVectorStore()
+    mock_embeddings = np.random.random((2, 4)).astype("float32")
+    mock_metadata = [
+        {"chunk_id": "doc1_c0", "text": "Hello world", "doc_id": "doc1", "source_file": "doc1.pdf", "page_number": 1, "metadata": {"char_count": 11}},
+        {"chunk_id": "doc1_c1", "text": "Goodbye world", "doc_id": "doc1", "source_file": "doc1.pdf", "page_number": 2, "metadata": {"char_count": 13}}
+    ]
+    store.add_embeddings(mock_embeddings, mock_metadata)
+    store.save_index()
+    
+    store2 = FAISSVectorStore()
+    store2.load_index()
+    print("Reloaded successfully. Total count:", store2.index.ntotal)

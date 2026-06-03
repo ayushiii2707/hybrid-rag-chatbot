@@ -1,0 +1,44 @@
+{
+  "spelling_corrector": {
+    "ignored_words": [
+      "UDYAM",
+      "FSSAI",
+      "onboarding",
+      "in-house"
+    ]
+  },
+  "entity_matcher": {
+    "matching_threshold": 80.0,
+    "max_org_words": 4,
+    "max_word_diff": 2,
+    "reference_vendors": [
+      "Google",
+      "Microsoft",
+      "Amazon Web Services",
+      "Apple",
+      "Oracle",
+      "Salesforce",
+      "Intel Corp",
+      "Dell Technologies",
+      "Hewlett Packard",
+      "Cisco Systems",
+      "IBM Corp",
+      "Adobe Inc",
+      "Zoom"
+    ],
+    "generic_phrases": [
+      "supplier of goods",
+      "supplier address",
+      "billing statement",
+      "invoice number",
+      "authorized signatory",
+      "terms and conditions",
+      "merchandise supplier",
+      "purchase order",
+      "internal circulation",
+      "user manual",
+      "delivery location",
+      "contact person"
+    ]
+  }
+}
