@@ -5,11 +5,11 @@
   },
   "vector_store": {
     "type": "faiss",
-    "index_path": "backend/embeddings/faiss_index.bin",
-    "metadata_path": "backend/embeddings/metadata.json"
+    "index_path": "embeddings/faiss_index.bin",
+    "metadata_path": "embeddings/metadata.json"
   },
   "retrieval": {
     "top_k": 3,
-    "similarity_threshold": 0.4
+    "similarity_threshold": 0.25
   }
 }

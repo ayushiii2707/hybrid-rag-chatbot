@@ -2,10 +2,15 @@ import json
 import logging
 import os
 from typing import Any, Dict, List, Optional
-from embedding_generator import EmbeddingGenerator
-from vector_store import BaseVectorStore, FAISSVectorStore
+from embeddings.embedding_generator import EmbeddingGenerator
+from embeddings.vector_store import BaseVectorStore, FAISSVectorStore
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_score(score: float) -> float:
+    """Maps raw FAISS inner-product score to a clean 0.0–1.0 range."""
+    return max(0.0, min(1.0, (score + 1) / 2))
 
 
 class RetrievalEngine:
@@ -31,7 +36,7 @@ class RetrievalEngine:
         """
         # Load configuration parameters
         self.top_k = 3
-        self.similarity_threshold = 0.4
+        self.similarity_threshold = 0.25
 
         if config_path is None:
             config_path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -105,17 +110,46 @@ class RetrievalEngine:
 
         # 3. Filter by similarity threshold
         filtered_matches = []
+        rejected_count = 0
         for match in raw_matches:
             score = match["score"]
             if score >= filter_threshold:
                 filtered_matches.append(match)
             else:
+                rejected_count += 1
                 logger.info(
                     f"Match '{match['chunk_id']}' rejected: score {score:.4f} is below threshold {filter_threshold}."
                 )
 
-        logger.info(f"Retrieved {len(filtered_matches)} match(es) for query '{query}'.")
+        # Normalize scores to 0.0–1.0 range
+        for r in filtered_matches:
+            r["score"] = normalize_score(r["score"])
+
+        logger.info(
+            f"[RetrievalEngine] FAISS raw candidates: {len(raw_matches)}, "
+            f"Rejected by threshold: {rejected_count}, "
+            f"Surviving: {len(filtered_matches)} (threshold={filter_threshold})"
+        )
         return filtered_matches
+
+
+    def retrieve_candidate_chunks(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        original_query: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Retrieves multiple candidate chunks (procedural / workflow queries)."""
+        return self.retrieve(query, top_k=top_k)
+
+    def retrieve_best_chunk(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        original_query: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Retrieves the best matching chunk (factual / single-answer queries)."""
+        return self.retrieve(query, top_k=top_k)
 
 
 if __name__ == "__main__":

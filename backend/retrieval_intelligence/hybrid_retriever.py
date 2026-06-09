@@ -40,7 +40,7 @@ class HybridRetriever(RetrievalEngine):
         self.keyword_ranker = KeywordRanker(metadata_path=metadata_path)
         self.reranker = Reranker(config_path=config_path, spacy_model=spacy_model)
         
-        self.candidate_pool_size = 12
+        self.candidate_pool_size = 30
         
         # Build lookup mapping for fast corpus O(1) searches
         self.chunks_by_id = {c["chunk_id"]: c for c in self.keyword_ranker.chunks}
@@ -56,7 +56,8 @@ class HybridRetriever(RetrievalEngine):
         self,
         query: str,
         top_k: Optional[int] = None,
-        threshold: Optional[float] = None
+        threshold: Optional[float] = None,
+        original_query: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Standard single-chunk retrieval mode.
@@ -64,24 +65,45 @@ class HybridRetriever(RetrievalEngine):
         candidates = super().retrieve(
             query=query,
             top_k=self.candidate_pool_size,
-            threshold=0.15
+            threshold=threshold
         )
         if not candidates:
+            logger.info(
+                f"[HybridRetriever] Best-Chunk Mode - Original candidates: 0, "
+                f"Final after deduplication: 0, "
+                f"Entering reranking: 0"
+            )
             return []
 
-        # Map full metadata properties back to candidates
+        # Deduplicate candidates to ensure no duplicate chunks are unnecessarily propagated downstream
+        unique_candidates_dict = {}
         for cand in candidates:
+            unique_candidates_dict[cand["chunk_id"]] = cand
+        deduped_candidates = list(unique_candidates_dict.values())
+
+        logger.info(
+            f"[HybridRetriever] Best-Chunk Mode - Original candidates: {len(candidates)}, "
+            f"Final after deduplication: {len(deduped_candidates)}, "
+            f"Entering reranking: {len(deduped_candidates)}"
+        )
+
+        # Map full metadata properties back to candidates
+        for cand in deduped_candidates:
             chunk_obj = self.chunks_by_id.get(cand["chunk_id"])
             if chunk_obj:
                 cand["metadata"].update(chunk_obj.get("metadata", {}))
 
-        candidate_ids = [cand["chunk_id"] for cand in candidates]
+        candidate_ids = [cand["chunk_id"] for cand in deduped_candidates]
         keyword_scores = self.keyword_ranker.score_query(query, candidate_ids)
+
+        # Enrich ranks for retrieval agreement scoring
+        self._enrich_agreement_ranks(query, deduped_candidates, candidates)
 
         reranked_candidates = self.reranker.rerank(
             query=query,
-            candidates=candidates,
-            keyword_scores=keyword_scores
+            candidates=deduped_candidates,
+            keyword_scores=keyword_scores,
+            original_query=original_query
         )
 
         result_top_k = top_k if top_k is not None else self.top_k
@@ -91,7 +113,8 @@ class HybridRetriever(RetrievalEngine):
         self,
         query: str,
         top_k: Optional[int] = None,
-        threshold: Optional[float] = None
+        threshold: Optional[float] = None,
+        original_query: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Procedural candidate expansion mode. Gathers neighboring, same-section,
@@ -100,9 +123,14 @@ class HybridRetriever(RetrievalEngine):
         base_candidates = super().retrieve(
             query=query,
             top_k=self.candidate_pool_size,
-            threshold=0.15
+            threshold=threshold
         )
         if not base_candidates:
+            logger.info(
+                f"[HybridRetriever] Candidate Expansion Mode - Original candidates: 0, "
+                f"Final after deduplication: 0, "
+                f"Entering reranking: 0"
+            )
             return []
 
         # Enrich initial semantic candidates
@@ -180,15 +208,31 @@ class HybridRetriever(RetrievalEngine):
 
         expanded_candidates = list(expanded_cands_dict.values())
 
+        # Explicitly deduplicate to ensure no duplicate chunks are unnecessarily propagated downstream
+        unique_expanded_dict = {}
+        for cand in expanded_candidates:
+            unique_expanded_dict[cand["chunk_id"]] = cand
+        deduped_expanded = list(unique_expanded_dict.values())
+
+        logger.info(
+            f"[HybridRetriever] Candidate Expansion Mode - Original candidates: {len(base_candidates)}, "
+            f"Final after deduplication: {len(deduped_expanded)}, "
+            f"Entering reranking: {len(deduped_expanded)}"
+        )
+
         # BM25 Keyword scoring
-        candidate_ids = [c["chunk_id"] for c in expanded_candidates]
+        candidate_ids = [c["chunk_id"] for c in deduped_expanded]
         keyword_scores = self.keyword_ranker.score_query(query, candidate_ids)
+
+        # Enrich ranks for retrieval agreement scoring
+        self._enrich_agreement_ranks(query, deduped_expanded, base_candidates)
 
         # Composite Reranking
         reranked_candidates = self.reranker.rerank(
             query=query,
-            candidates=expanded_candidates,
-            keyword_scores=keyword_scores
+            candidates=deduped_expanded,
+            keyword_scores=keyword_scores,
+            original_query=original_query
         )
 
         result_top_k = top_k if top_k is not None else self.top_k
@@ -198,7 +242,8 @@ class HybridRetriever(RetrievalEngine):
         self,
         query: str,
         top_k: Optional[int] = None,
-        threshold: Optional[float] = None
+        threshold: Optional[float] = None,
+        original_query: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Retrieves, reranks, and filters document chunks using both semantic and keyword signals.
@@ -209,10 +254,24 @@ class HybridRetriever(RetrievalEngine):
 
         if self._is_procedural_query(query):
             logger.info("Procedural query detected. Running Candidate Expansion mode.")
-            results = self.retrieve_candidate_chunks(query, top_k=top_k, threshold=threshold)
+            results = self.retrieve_candidate_chunks(query, top_k=top_k, threshold=threshold, original_query=original_query)
         else:
             logger.info("Factual/Standard query detected. Running Best-Chunk mode.")
-            results = self.retrieve_best_chunk(query, top_k=top_k, threshold=threshold)
+            results = self.retrieve_best_chunk(query, top_k=top_k, threshold=threshold, original_query=original_query)
 
         logger.info(f"HybridRetriever returned {len(results)} matches for query: '{query}'")
         return results
+
+    def _enrich_agreement_ranks(self, query: str, target_candidates: List[Dict[str, Any]], raw_faiss_candidates: List[Dict[str, Any]]) -> None:
+        """Helper to attach faiss_rank and bm25_rank for retrieval agreement scoring."""
+        faiss_ranks_map = {cand["chunk_id"]: idx + 1 for idx, cand in enumerate(raw_faiss_candidates)}
+        
+        # Calculate BM25 scores over the entire corpus
+        all_chunk_ids = [c["chunk_id"] for c in self.keyword_ranker.chunks]
+        all_bm25_scores = self.keyword_ranker.score_query(query, all_chunk_ids)
+        sorted_bm25 = sorted(all_bm25_scores.keys(), key=lambda cid: all_bm25_scores[cid], reverse=True)
+        bm25_ranks_map = {cid: rank + 1 for rank, cid in enumerate(sorted_bm25)}
+        
+        for cand in target_candidates:
+            cand["faiss_rank"] = faiss_ranks_map.get(cand["chunk_id"], 999)
+            cand["bm25_rank"] = bm25_ranks_map.get(cand["chunk_id"], 999)

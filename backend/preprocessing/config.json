@@ -3,8 +3,12 @@
     "ignored_words": [
       "UDYAM",
       "FSSAI",
+      "GST",
+      "MSME",
+      "PAN",
       "onboarding",
-      "in-house"
+      "in-house",
+      "micr"
     ]
   },
   "entity_matcher": {

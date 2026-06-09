@@ -63,7 +63,7 @@ class AdvancedConfidenceScorer:
         """
         Initializes the AdvancedConfidenceScorer with configurations.
         """
-        self.min_confidence_threshold = 0.45
+        self.min_confidence_threshold = 0.55
         self.high_confidence_threshold = 0.80
         self.weights = {
             "semantic": 0.55,
@@ -363,7 +363,15 @@ class AdvancedConfidenceScorer:
         chunk_text: str,
         semantic_score: float,
         keyword_score: float,
-        chunk_metadata: Dict[str, Any]
+        chunk_metadata: Dict[str, Any],
+        agreement_boost: float = 0.0,
+        agreement_detected: bool = False,
+        faiss_rank: int = 999,
+        bm25_rank: int = 999,
+        source_agreement_boost: float = 0.0,
+        source_agreement_detected: bool = False,
+        supporting_chunks: int = 1,
+        supporting_documents: int = 1
     ) -> Dict[str, Any]:
         """
         Calculates the composite confidence score for a candidate chunk.
@@ -414,12 +422,19 @@ class AdvancedConfidenceScorer:
         mismatch_penalty = self._intent_mismatch_penalty(query, chunk_text)
         base_confidence += mismatch_penalty
 
+        # 5. Add retrieval agreement boost
+        base_confidence += agreement_boost
+
+        # 6. Add source agreement boost
+        base_confidence += source_agreement_boost
+
         logger.info(
             f"score_candidate | semantic={semantic_score:.3f} alignment={alignment:.3f} "
             f"keyword={keyword_score:.3f} entity={entity_score:.3f} "
             f"answer_type={answer_type_score:.3f} answerability={answerability:.3f} "
             f"sufficiency={sufficiency:.3f} quality={quality_score:.3f} "
-            f"mismatch_penalty={mismatch_penalty:.2f} → final={base_confidence:.4f}"
+            f"mismatch_penalty={mismatch_penalty:.2f} agreement_boost={agreement_boost:.2f} "
+            f"source_agreement_boost={source_agreement_boost:.2f} → final={base_confidence:.4f}"
         )
 
         return {
@@ -435,7 +450,14 @@ class AdvancedConfidenceScorer:
                 "alignment": float(alignment),
                 "sufficiency": float(sufficiency),
                 "intent_mismatch_penalty": float(mismatch_penalty),
-                # Fragmentation penalty removed — replaced by sufficiency_score
+                "agreement_boost": float(agreement_boost),
+                "agreement_detected": bool(agreement_detected),
+                "faiss_rank": int(faiss_rank),
+                "bm25_rank": int(bm25_rank),
+                "source_agreement_boost": float(source_agreement_boost),
+                "source_agreement_detected": bool(source_agreement_detected),
+                "supporting_chunks": int(supporting_chunks),
+                "supporting_documents": int(supporting_documents),
             }
         }
 
@@ -478,21 +500,25 @@ class AdvancedConfidenceScorer:
 
         # Step and numbering patterns
         step_label_pat = re.compile(r'^\s*(?:Step|STEP|Stage|STAGE|Phase|PHASE)\s*(\d+)\b', re.IGNORECASE)
-        step_num_pat = re.compile(r'^\s*(\d+(?:\.\d+)+|\d+)\.?\s*(.*)$')
+        step_num_pat = re.compile(r'^\s*(\d+(?:\.\d+)+|\d+\.)\s*(.*)$')
 
         # Check query intent for procedural workflow keywords
         is_procedural_query = any(w in q_lower for w in ["step", "how to", "process", "workflow", "onboarding", "register", "onboard", "add", "create", "steps"])
 
         if is_procedural_query:
-            # Group candidate chunks by document
+            # Group candidate chunks by document and section to avoid cross-procedure penalties
             docs_groups = {}
             for cand in ranked_candidates:
                 src = cand.get("metadata", {}).get("source_file", "")
+                sec = cand.get("metadata", {}).get("section_title", "")
                 if src:
-                    docs_groups.setdefault(src, []).append(cand)
+                    sec_key = sec if sec else "general"
+                    group_key = (src, sec_key)
+                    docs_groups.setdefault(group_key, []).append(cand)
 
             # Process each document group to calculate multi-chunk continuity and completeness
-            for src, doc_cands in docs_groups.items():
+            for key, doc_cands in docs_groups.items():
+                src, sec = key
                 # Helper to extract chunk index
                 def get_chunk_index(c):
                     chunk_id = c.get("chunk_id", "")
@@ -577,6 +603,10 @@ class AdvancedConfidenceScorer:
                     # Calculate overall combined multiplier and clamp it to avoid dropping below Uncertain band
                     combined_multiplier = workflow_factor * penalty_factor
                     combined_multiplier = max(0.60, combined_multiplier)
+                    
+                    # Less aggressive penalty for sparse/targeted retrievals
+                    if len(doc_cands) < 10:
+                        combined_multiplier = max(0.85, combined_multiplier)
                     
                     adjusted_score = base_score * combined_multiplier
                     cand["score"] = float(max(0.0, min(1.0, adjusted_score)))

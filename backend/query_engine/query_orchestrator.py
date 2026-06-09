@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import sys
 import time
 from typing import Any, Dict, List, Optional
@@ -63,7 +64,7 @@ class QueryOrchestrator:
         """
         logger.info("Initializing QueryOrchestrator...")
         
-        self.min_confidence_threshold = 0.45
+        self.min_confidence_threshold = 0.55
         self.high_confidence_threshold = 0.80
         self.retrieval_top_k = 5
         self.sentence_split_regex = r"(?<=[.!?])\s+"
@@ -92,6 +93,10 @@ class QueryOrchestrator:
         # 3. Instantiate HybridRetriever (reloads existing FAISS index and BM25 statistics)
         ret_intel_config = os.path.join(BACKEND_DIR, "retrieval_intelligence", "config.json")
         self.retrieval_engine = HybridRetriever(config_path=ret_intel_config)
+
+        # Refresh preprocessor's enterprise vocabulary using the loaded retrieval engine
+        if hasattr(self, "preprocessor") and hasattr(self.preprocessor, "refresh_vocabulary"):
+            self.preprocessor.refresh_vocabulary(retrieval_engine=self.retrieval_engine)
 
         # 4. Instantiate extractor passing the pre-loaded embedding model generator
         self.extractor = AnswerExtractor(
@@ -132,6 +137,57 @@ class QueryOrchestrator:
         except Exception as e:
             logger.warning(f"Could not initialize DB cleanup in orchestrator: {e}")
 
+    # ── Response Formatting Layer ─────────────────────────────────────────────
+    def _format_final_answer(
+        self,
+        raw_text: str,
+        source_file: str = "",
+        page_number: str = "",
+        confidence: float = 0.0
+    ) -> dict:
+        """
+        Strict formatting layer: takes raw synthesized chunk text and returns
+        a clean, user-facing answer dict. No external knowledge is added.
+        Strips internal citations, duplicate lines, and boilerplate headers.
+        """
+        import re as _re
+
+        if not raw_text or not raw_text.strip():
+            return {
+                "answer": "No relevant information found in the documents.",
+                "source_file": "",
+                "page_number": "",
+                "confidence": 0.0
+            }
+
+        # Remove inline citation markers e.g. " [Page 4, manual.pdf]"
+        cleaned = _re.sub(r"\s*\[Page\s+\d+[^\]]*\]", "", raw_text)
+        # Remove "Verbatim Source Quote." header lines
+        cleaned = _re.sub(r"Verbatim Source Quote\.\n", "", cleaned)
+        # Remove WARNING lines (internal completeness metadata)
+        cleaned = _re.sub(r"\nWARNING:.*", "", cleaned)
+        # Collapse 3+ newlines into 2
+        cleaned = _re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+
+        # Deduplicate repeated lines
+        seen = set()
+        deduped_lines = []
+        for line in cleaned.splitlines():
+            key = line.strip()
+            if key and key not in seen:
+                seen.add(key)
+                deduped_lines.append(line)
+            elif not key:
+                deduped_lines.append(line)  # preserve blank separators
+        cleaned = "\n".join(deduped_lines).strip()
+
+        return {
+            "answer": cleaned or "No relevant information found in the documents.",
+            "source_file": source_file,
+            "page_number": str(page_number) if page_number else "",
+            "confidence": round(confidence, 4)
+        }
+
     def answer_query(
         self,
         query: str,
@@ -158,14 +214,29 @@ class QueryOrchestrator:
         # ── Execution timer (used for audit logging at the end) ───────────────
         _query_start_time = time.monotonic()
 
+        # Problem 8 initialization
+        procedural_expansion = False
+        full_procedure_returned = False
+        procedure_length = 0
+        base_chunk_id = None
+        expanded_chunks_count = 0
+        expansion_reason = None
+
         if not query or not query.strip():
-            return self.formatter.format_response(
+            response = self.formatter.format_response(
                 query="",
                 corrected_query="",
                 confirmation_required=False,
                 answer_found=False,
                 confidence=0.0
             )
+            response["procedural_expansion"] = False
+            response["full_procedure_returned"] = False
+            response["procedure_length"] = 0
+            response["base_chunk"] = None
+            response["expanded_chunks"] = 0
+            response["expansion_reason"] = None
+            return response
 
         # Step 1. Preprocessing (whitespace cleaning + typo corrections)
         prep_results = self.preprocessor.preprocess_query(query)
@@ -173,6 +244,8 @@ class QueryOrchestrator:
         confirmation_req = prep_results["confirmation_required"]
 
         # Step 1.5. Pre-retrieval Enterprise Governance Check
+        # NOTE: QueryGuard evaluates the plain corrected_q (no synonym expansion),
+        # so expansion terms never trigger false security blocks.
         guard_result = self.query_guard.evaluate_query(corrected_q)
 
         if guard_result["status"] == "blocked":
@@ -187,6 +260,12 @@ class QueryOrchestrator:
             response["blocked"] = True
             response["risk_level"] = guard_result["risk_level"]
             response["message"] = "This query violates enterprise security policies."
+            response["procedural_expansion"] = False
+            response["full_procedure_returned"] = False
+            response["procedure_length"] = 0
+            response["base_chunk"] = None
+            response["expanded_chunks"] = 0
+            response["expansion_reason"] = None
             
             # Log blocked query immediately using audit logger
             if self.audit_logger is not None:
@@ -214,7 +293,87 @@ class QueryOrchestrator:
                 )
             return response
 
+        # Step 1.7. Ambiguity & Incompleteness Query Suggestion Check
+        is_suggestion_triggered = False
+        suggestions = []
+        trigger_reason = ""
+        
+        if guard_result["status"] != "blocked":
+            is_suggestion_triggered, suggestions, trigger_reason = self._evaluate_query_suggestions(corrected_q)
+            
+        if is_suggestion_triggered:
+            suggestions_text = "Did you mean:\n\n" + "\n".join(f"{i+1}. {s}" for i, s in enumerate(suggestions))
+            
+            # Print lightweight developer log
+            logger.info(
+                f"[QueryOrchestrator] Original query: '{query}' | "
+                f"Ambiguity detected: True | "
+                f"Suggestion trigger reason: {trigger_reason} | "
+                f"Suggestions generated: {suggestions}"
+            )
+            
+            # Get granularity for suggestion response
+            granularity = classify_query_granularity(corrected_q)
+            
+            response = self.formatter.format_response(
+                query=query,
+                corrected_query=corrected_q,
+                confirmation_required=confirmation_req,
+                answer_found=False,
+                confidence=0.0,
+                message=suggestions_text
+            )
+            response["synthesized_answer"] = suggestions_text
+            response["blocked"] = False
+            response["risk_level"] = guard_result["risk_level"]
+            response["query_granularity"] = granularity
+            response["procedural_expansion"] = False
+            response["full_procedure_returned"] = False
+            response["procedure_length"] = 0
+            response["base_chunk"] = None
+            response["expanded_chunks"] = 0
+            response["expansion_reason"] = None
+            
+            # Log using audit logger if present
+            try:
+                if self.audit_logger is not None:
+                    _processing_ms = int((time.monotonic() - _query_start_time) * 1000)
+                    self.audit_logger.log_query(
+                        query=query,
+                        corrected_query=corrected_q,
+                        query_granularity=granularity,
+                        answer_found=False,
+                        partial_match_found=False,
+                        confidence=0.0,
+                        confidence_band="No answer",
+                        top_source_file=None,
+                        top_page_number=None,
+                        top_chunk_id=None,
+                        retrieved_sources=[],
+                        synthesized_answer=suggestions_text,
+                        processing_time_ms=_processing_ms,
+                        user_id=user_id,
+                        email=email,
+                        role=role,
+                        blocked=False,
+                        risk_level=guard_result["risk_level"],
+                        security_reason=None
+                    )
+            except Exception as _log_exc:
+                logger.error(f"Audit logging failed in suggestions (non-critical): {_log_exc}")
+                
+            return response
+        else:
+            logger.info(
+                f"[QueryOrchestrator] Original query: '{query}' | "
+                f"Ambiguity detected: False"
+            )
+
         # Step 2. Query Granularity Detection & Scope-Aware Candidate Retrieval
+        # Step 2 (Problem 9): Synonym expansion is applied HERE, after QueryGuard and
+        # Suggestion layer, so only retrieval benefits from expanded vocabulary while
+        # governance and suggestion-trigger logic operate on the plain corrected query.
+        retrieval_q = self.preprocessor.expand_synonyms(corrected_q)
         granularity = classify_query_granularity(corrected_q)
         is_procedural = granularity in ("procedural", "workflow")
 
@@ -223,17 +382,23 @@ class QueryOrchestrator:
                 f"Query granularity='{granularity}'. Running Candidate Collection mode."
             )
             candidates = self.retrieval_engine.retrieve_candidate_chunks(
-                corrected_q,
-                top_k=self.retrieval_top_k
+                retrieval_q,
+                top_k=self.retrieval_top_k,
+                original_query=corrected_q
             )
         else:
             logger.info(
                 f"Query granularity='{granularity}'. Running Best-Chunk mode."
             )
             candidates = self.retrieval_engine.retrieve_best_chunk(
-                corrected_q,
-                top_k=self.retrieval_top_k
+                retrieval_q,
+                top_k=self.retrieval_top_k,
+                original_query=corrected_q
             )
+
+        logger.info(f"QUERY: {query}")
+        logger.info(f"RESULT COUNT: {len(candidates)}")
+        logger.info(f"TOP SCORE: {candidates[0]['score'] if candidates else None}")
 
         if not candidates:
             logger.info("Retrieval returned zero candidates.")
@@ -254,7 +419,8 @@ class QueryOrchestrator:
             return response
 
         # Generate query vector for excerpt extraction calculations
-        query_vector = self.retrieval_engine.generator.generate_embeddings([corrected_q])[0]
+        # Uses retrieval_q (synonym-expanded) for better excerpt similarity scoring
+        query_vector = self.retrieval_engine.generator.generate_embeddings([retrieval_q])[0]
 
         # Step 3. Extract sentence excerpts for each candidate
         evaluated_matches = []
@@ -321,35 +487,201 @@ class QueryOrchestrator:
             top_match = evaluated_matches[0]
             other_matches = evaluated_matches[1:]
 
+        # Step 4.5. Procedural Context Expansion
+        base_chunk_id = top_match["chunk_id"] if top_match else None
+        
+        if is_procedural and top_match and top_match["score"] >= self.min_confidence_threshold:
+            base_chunk = self.retrieval_engine.chunks_by_id.get(base_chunk_id)
+            if base_chunk:
+                doc_id = base_chunk.get("doc_id")
+                source_file = base_chunk.get("source_file") or base_chunk.get("metadata", {}).get("source_file")
+                
+                # Retrieve all chunks in the same document
+                same_doc_chunks = [
+                    c for c in self.retrieval_engine.keyword_ranker.chunks
+                    if c.get("source_file") == source_file or c.get("doc_id") == doc_id
+                ]
+                
+                # Get base chunk metadata and chunk index
+                base_meta = base_chunk.get("metadata", {})
+                proc_id = base_meta.get("procedure_id")
+                sec_title = base_meta.get("section_title")
+                base_index = base_chunk.get("chunk_index")
+                if base_index is None:
+                    match = re.search(r'_c(\d+)$', base_chunk_id)
+                    base_index = int(match.group(1)) if match else 0
+                
+                matched_chunks = []
+                
+                # Level 1: same procedure_id
+                if proc_id and proc_id != "general" and proc_id != "":
+                    matched_chunks = [
+                        c for c in same_doc_chunks
+                        if c.get("metadata", {}).get("procedure_id") == proc_id
+                    ]
+                    expansion_reason = "same_procedure_id"
+                
+                # Level 2: same section_title
+                if not matched_chunks and sec_title and sec_title != "general" and sec_title != "":
+                    matched_chunks = [
+                        c for c in same_doc_chunks
+                        if c.get("metadata", {}).get("section_title") == sec_title
+                    ]
+                    expansion_reason = "same_section_title"
+                
+                # Level 3: Adjacent sequence in document
+                if not matched_chunks:
+                    matched_chunks = []
+                    for c in same_doc_chunks:
+                        c_idx = c.get("chunk_index")
+                        if c_idx is None:
+                            match = re.search(r'_c(\d+)$', c["chunk_id"])
+                            c_idx = int(match.group(1)) if match else 0
+                        if abs(c_idx - base_index) <= 2:
+                            matched_chunks.append(c)
+                    expansion_reason = "adjacent_chunks"
+                
+                # Deduplicate and sort matching chunks by chunk_index
+                def get_chunk_idx_helper(c):
+                    idx = c.get("chunk_index")
+                    if idx is not None:
+                        return idx
+                    match = re.search(r'_c(\d+)$', c["chunk_id"])
+                    return int(match.group(1)) if match else 0
+                
+                matched_chunks.sort(key=get_chunk_idx_helper)
+                
+                # Find position of base chunk in matched_chunks
+                base_pos = -1
+                for i, c in enumerate(matched_chunks):
+                    if c["chunk_id"] == base_chunk_id:
+                        base_pos = i
+                        break
+                
+                # Refined threshold-based windowing logic (Problem 8 Refinement)
+                # Max procedure size in corpus is 14 chunks, with average size of 344 characters (~1,200 tokens total).
+                # Procedures <= 15 chunks are considered reasonably small and are returned in full.
+                # Only procedures > 15 chunks are truncated to a window of 10 chunks centered around the base chunk.
+                procedure_length = len(matched_chunks)
+                THRESHOLD_CHUNKS = 15
+                MAX_WINDOW_CHUNKS = 10
+                
+                if procedure_length <= THRESHOLD_CHUNKS:
+                    full_procedure_returned = True
+                    # Keep all chunks in matched_chunks
+                else:
+                    full_procedure_returned = False
+                    if procedure_length > MAX_WINDOW_CHUNKS:
+                        if base_pos != -1:
+                            half_win = MAX_WINDOW_CHUNKS // 2
+                            start_idx = max(0, base_pos - half_win)
+                            end_idx = min(procedure_length, start_idx + MAX_WINDOW_CHUNKS)
+                            if end_idx - start_idx < MAX_WINDOW_CHUNKS:
+                                start_idx = max(0, end_idx - MAX_WINDOW_CHUNKS)
+                            matched_chunks = matched_chunks[start_idx:end_idx]
+                        else:
+                            matched_chunks = matched_chunks[:MAX_WINDOW_CHUNKS]
+                
+                # Convert matched chunks back into candidate/evaluated_match format
+                expanded_candidates = []
+                expanded_evaluated_matches = []
+                
+                cand_by_id = {c["chunk_id"]: c for c in candidates}
+                eval_by_id = {m["chunk_id"]: m for m in evaluated_matches}
+                
+                for c in matched_chunks:
+                    cid = c["chunk_id"]
+                    text = c.get("text", "")
+                    c_meta = {
+                        "doc_id": c.get("doc_id"),
+                        "source_file": c.get("source_file"),
+                        "page_number": c.get("page_number"),
+                        "chunk_index": get_chunk_idx_helper(c),
+                        **c.get("metadata", {})
+                    }
+                    
+                    if cid in cand_by_id:
+                        expanded_candidates.append(cand_by_id[cid])
+                    else:
+                        expanded_candidates.append({
+                            "chunk_id": cid,
+                            "text": text,
+                            "score": 0.0,
+                            "metadata": c_meta
+                        })
+                        
+                    if cid in eval_by_id:
+                        expanded_evaluated_matches.append(eval_by_id[cid])
+                    else:
+                        excerpt_res = self.extractor.extract_answer_excerpt(query_vector, text)
+                        excerpt_text = excerpt_res["excerpt"]
+                        expanded_evaluated_matches.append({
+                            "source_file": c_meta["source_file"],
+                            "page_number": c_meta["page_number"],
+                            "chunk_id": cid,
+                            "score": 0.0,
+                            "raw_similarity": 0.0,
+                            "answer_excerpt": excerpt_text,
+                            "breakdown": {}
+                        })
+                
+                new_other_matches = []
+                for m in expanded_evaluated_matches:
+                    if m["chunk_id"] != base_chunk_id:
+                        new_other_matches.append(m)
+                
+                candidates = expanded_candidates
+                evaluated_matches = expanded_evaluated_matches
+                other_matches = new_other_matches
+                
+                procedural_expansion = True
+                expanded_chunks_count = len(matched_chunks)
+                
+                logger.info(
+                    f"[ProceduralExpansion] Base chunk: {base_chunk_id} | "
+                    f"Expansion triggered: True | "
+                    f"Expansion reason: {expansion_reason} | "
+                    f"Procedure length: {procedure_length} | "
+                    f"Full procedure returned: {full_procedure_returned} | "
+                    f"Expanded chunk count: {expanded_chunks_count}"
+                )
+
         # Step 5. Determine Confidence Tier and adjust lists
         top_confidence = top_match["score"] if top_match else 0.0
         
-        # High Confidence (> 0.80)
-        if top_confidence > 0.80:
+        passed_validation = top_confidence >= self.min_confidence_threshold
+        logger.info(
+            f"[QueryOrchestrator] Final confidence score: {top_confidence:.4f}, "
+            f"Active confidence threshold: {self.min_confidence_threshold:.2f}, "
+            f"Passed validation: {passed_validation}"
+        )
+        
+        # High Confidence (> self.high_confidence_threshold)
+        if top_confidence > self.high_confidence_threshold:
             answer_found = True
             # For procedural, do not aggressively filter out other chunks from the same procedure/document
             if is_procedural:
                 final_other_matches = [m for m in other_matches if m["source_file"] == top_match["source_file"]]
             else:
-                final_other_matches = [m for m in other_matches if m["score"] >= 0.45]
+                final_other_matches = [m for m in other_matches if m["score"] >= self.min_confidence_threshold]
             logger.info(f"Confidence Band: High confidence ({top_confidence:.4f}). Showing alternatives.")
-        # Partial Answer (0.65 to 0.80): Serve top match + alternatives above threshold
-        elif 0.65 <= top_confidence <= 0.80:
+        # Partial Answer (0.65 to self.high_confidence_threshold): Serve top match + alternatives above threshold
+        elif 0.65 <= top_confidence <= self.high_confidence_threshold:
             answer_found = True
             if is_procedural:
                 final_other_matches = [m for m in other_matches if m["source_file"] == top_match["source_file"]]
             else:
-                final_other_matches = [m for m in other_matches if m["score"] >= 0.45]
+                final_other_matches = [m for m in other_matches if m["score"] >= self.min_confidence_threshold]
             logger.info(f"Confidence Band: Partial answer ({top_confidence:.4f}). Showing alternatives.")
-        # Uncertain (0.45 to 0.65): Serve top match + alternatives above threshold
-        elif 0.45 <= top_confidence < 0.65:
+        # Uncertain (self.min_confidence_threshold to 0.65): Serve top match + alternatives above threshold
+        elif self.min_confidence_threshold <= top_confidence < 0.65:
             answer_found = True
             if is_procedural:
                 final_other_matches = [m for m in other_matches if m["source_file"] == top_match["source_file"]]
             else:
-                final_other_matches = [m for m in other_matches if m["score"] >= 0.45]
+                final_other_matches = [m for m in other_matches if m["score"] >= self.min_confidence_threshold]
             logger.info(f"Confidence Band: Uncertain ({top_confidence:.4f}). Showing alternatives.")
-        # No Answer (< 0.45)
+        # No Answer (< self.min_confidence_threshold)
         else:
             answer_found = False
             final_other_matches = []
@@ -382,12 +714,15 @@ class QueryOrchestrator:
                     rejection_message = "I found related GSTIN information but no clear answer about duplicate GSTIN validation."
 
         # Step 6. Format final JSON response
+        # Q069 fix: when answer_found is False the API must surface confidence = 0.0,
+        # not the raw retrieval score, which would mislead benchmark evaluation.
+        reported_confidence = top_confidence if answer_found else 0.0
         response = self.formatter.format_response(
             query=query,
             corrected_query=corrected_q,
             confirmation_required=confirmation_req,
             answer_found=answer_found,
-            confidence=top_confidence,
+            confidence=reported_confidence,
             top_match=top_match if (answer_found or semantic_rejection) else None,
             other_matches=final_other_matches if answer_found else None,
             partial_match_found=semantic_rejection,
@@ -442,6 +777,16 @@ class QueryOrchestrator:
                 response["completeness_warning"]     = None
                 response["synthesized_answer"]       = synthesized_text
                 response["query_granularity"]        = granularity
+
+                # Apply formatting layer
+                _fmt = self._format_final_answer(
+                    raw_text=synthesized_text,
+                    source_file=src_file,
+                    page_number=page_num,
+                    confidence=top_confidence
+                )
+                response["synthesized_answer"] = _fmt["answer"]
+                logger.info(f"[Formatter] source={_fmt['source_file']} page={_fmt['page_number']} confidence={_fmt['confidence']}")
 
                 if response.get("top_match"):
                     response["top_match"]["answer_excerpt"] = synthesized_text
@@ -530,6 +875,18 @@ class QueryOrchestrator:
                 response["completeness_warning"]     = completeness_warning
                 response["synthesized_answer"]       = synthesized_text
                 response["query_granularity"]        = granularity
+
+                # Apply formatting layer
+                _top_src  = top_match.get("source_file", "") if top_match else ""
+                _top_page = top_match.get("page_number", "") if top_match else ""
+                _fmt = self._format_final_answer(
+                    raw_text=synthesized_text,
+                    source_file=_top_src,
+                    page_number=_top_page,
+                    confidence=top_confidence
+                )
+                response["synthesized_answer"] = _fmt["answer"]
+                logger.info(f"[Formatter] source={_fmt['source_file']} page={_fmt['page_number']} confidence={_fmt['confidence']}")
 
                 if response.get("top_match"):
                     response["top_match"]["answer_excerpt"] = synthesized_text
@@ -621,7 +978,268 @@ class QueryOrchestrator:
             # Logging must NEVER crash the chatbot — silently swallow all errors
             logger.error(f"Audit logging failed (non-critical): {_log_exc}")
 
+        # Add Problem 8 explainability fields
+        response["procedural_expansion"] = procedural_expansion
+        response["full_procedure_returned"] = full_procedure_returned if procedural_expansion else False
+        response["procedure_length"] = procedure_length if procedural_expansion else 0
+        response["base_chunk"] = base_chunk_id if procedural_expansion else None
+        response["expanded_chunks"] = expanded_chunks_count
+        response["expansion_reason"] = expansion_reason
+
+        # Add Safe Fix 4: Corpus Gap Detection explainability field
+        retrieval_passed = (top_confidence >= self.min_confidence_threshold)
+        answer_extraction_failed = not response.get("answer_found", False)
+        response["retrieval_success_answer_missing"] = bool(retrieval_passed and answer_extraction_failed)
+
         return response
+
+    def _evaluate_query_suggestions(self, query: str) -> tuple[bool, list[str], str]:
+        """
+        Evaluates whether the query is ambiguous/incomplete and generates deterministic suggestions.
+        """
+        q_clean = query.strip().lower()
+        # Remove trailing punctuation for clean word matching
+        q_clean = re.sub(r'[?.!,;:]', '', q_clean).strip()
+        words = q_clean.split()
+        
+        if not words:
+            return False, [], ""
+            
+        # 1. Exact match on predefined query suggestions keys (or exact word match)
+        predefined_keys = {
+            "gst invalid", "pan issue", "vendor rejected", "fssai inactive", "msme error",
+            "delivery location", "approval contact", "in-house consumption", "timeline issue", "spelling mismatch"
+        }
+        
+        # Check if the normalized query matches key or if words match exactly
+        for key in predefined_keys:
+            key_words = set(key.split())
+            query_words = set(words)
+            if q_clean == key or query_words == key_words:
+                suggestions = self._get_deterministic_suggestions(key)
+                return True, suggestions, f"Query matched predefined ambiguous query key '{key}' exactly."
+
+        # 2. General trigger conditions:
+        # - Must be extremely short (<= 3 words)
+        # - Must have enterprise context (contains enterprise keywords)
+        # - Must lack procedural intent (no how, steps, etc.)
+        # - Must lack action verbs (incomplete)
+        # - Must contain a problem-indicating keyword (e.g. invalid, issue, error, rejected)
+        
+        is_short = len(words) <= 3
+        
+        procedural_terms = {"how", "step", "process", "workflow", "guide", "setup", "register", "onboard", "add", "create", "stage", "phase", "procedure"}
+        has_procedural = any(w in words or w in q_clean for w in procedural_terms)
+        
+        enterprise_keywords = {
+            "gst", "pan", "fssai", "msme", "vendor", "supplier", "onboarding", 
+            "onboard", "registration", "register", "delivery", "location", 
+            "approval", "manual", "tax", "active", "status", "rules", "format", 
+            "invalid", "error", "mismatch", "issue", "rejected", "consumption"
+        }
+        has_enterprise = any(w in words or any(ek in w for ek in enterprise_keywords) for w in words)
+        
+        action_verbs = {"resolve", "fix", "update", "check", "verify", "submit", "change", "upload", "download", "enter"}
+        has_action = any(w in words for w in action_verbs)
+        
+        problem_keywords = {"invalid", "issue", "error", "rejected", "inactive", "mismatch", "failed", "problems", "problem", "mismatching", "mismatches"}
+        has_problem = any(w in words for w in problem_keywords)
+        
+        if has_enterprise and is_short and not has_procedural and not has_action and has_problem:
+            # We trigger suggestions!
+            suggestions = self._get_deterministic_suggestions(q_clean)
+            return True, suggestions, f"Query length={len(words)} <= 3 words, has enterprise context, has problem indicator, lacks procedural intent/action verbs."
+            
+        return False, [], ""
+
+    def _get_deterministic_suggestions(self, q_clean: str) -> list[str]:
+        # Predefined suggestions mapping for common inputs and substring matches
+        deterministic_map = {
+            "gst invalid": [
+                "GST number invalid issue",
+                "GST validation failed",
+                "GST verification process"
+            ],
+            "pan issue": [
+                "PAN declaration issue",
+                "PAN validation failure",
+                "PAN name mismatch issue"
+            ],
+            "vendor rejected": [
+                "Vendor registration rejection reasons",
+                "How to appeal rejected vendor status",
+                "Vendor profile correction guidelines"
+            ],
+            "fssai inactive": [
+                "FSSAI license active status check",
+                "Resolving inactive FSSAI validation error",
+                "FBO search portal link verification"
+            ],
+            "msme error": [
+                "MSME validation rule failure",
+                "MSME UDYAM registration guidelines",
+                "Resolving MSME registration formatting errors"
+            ],
+            "delivery location": [
+                "How to add a delivery location",
+                "Delivery location approval workflow",
+                "Checking delivery location status"
+            ],
+            "approval contact": [
+                "Onboarding approval contact email",
+                "Who to contact for vendor approval",
+                "Escalation path for pending approval"
+            ],
+            "in-house consumption": [
+                "Items for in-house consumption policy",
+                "Nature of services for internal consumption",
+                "Tax rules for in-house consumption"
+            ],
+            "timeline issue": [
+                "Vendor onboarding timeline overview",
+                "Registration approval SLA timeline",
+                "What to do if onboarding timeline is delayed"
+            ],
+            "spelling mismatch": [
+                "Resolving name spelling mismatches",
+                "How to update PAN name spelling mismatches",
+                "Document verification name matching rules"
+            ]
+        }
+        
+        # 1. Corpus/Metadata Matches
+        metadata_suggestions = []
+        query_words_split = q_clean.split()
+        STOPWORDS = {
+            "the", "a", "an", "and", "or", "but", "is", "are", "was", "were", "to", "for", 
+            "in", "on", "at", "by", "of", "with", "about", "against", "between", "into", 
+            "through", "during", "before", "after", "above", "below", "from", "up", "down", 
+            "in", "out", "off", "over", "under", "again", "further", "then", "once", "here", 
+            "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", 
+            "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", 
+            "same", "so", "than", "too", "very", "can", "will", "just", "should", "now"
+        }
+        query_words = [w for w in query_words_split if w not in STOPWORDS]
+        if not query_words:
+            query_words = query_words_split
+
+        if hasattr(self, "retrieval_engine") and hasattr(self.retrieval_engine, "keyword_ranker"):
+            metadata_overlaps = {}  # title_str -> overlap_count
+            for chunk in self.retrieval_engine.keyword_ranker.chunks:
+                meta = chunk.get("metadata", {})
+                for title_key in ["subsection_title", "section_title"]:
+                    title = meta.get(title_key)
+                    if title and isinstance(title, str):
+                        title_clean = title.strip()
+                        if not title_clean:
+                            continue
+                        title_lower = title_clean.lower()
+                        overlap = sum(1 for qw in query_words if qw in title_lower)
+                        if overlap > 0:
+                            if title_clean not in metadata_overlaps or overlap > metadata_overlaps[title_clean]:
+                                metadata_overlaps[title_clean] = overlap
+                                
+            sorted_metadata = sorted(metadata_overlaps.keys(), key=lambda t: (-metadata_overlaps[t], len(t)))
+            for title in sorted_metadata:
+                if title not in metadata_suggestions:
+                    metadata_suggestions.append(title)
+
+        # 2. Query Logs Matches
+        db_queries = []
+        try:
+            from backend.database.db import SessionLocal
+            from backend.auth.auth_models import QueryLog
+            db = SessionLocal()
+            try:
+                logs = db.query(QueryLog).filter(
+                    QueryLog.answer_found == True,
+                    QueryLog.confidence >= self.min_confidence_threshold
+                ).all()
+                for log in logs:
+                    if log.query:
+                        db_queries.append(log.query)
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"Could not query database QueryLog for suggestions: {e}")
+
+        file_queries = []
+        log_file = os.path.join(BACKEND_DIR, "logs", "query_logs.jsonl")
+        if os.path.exists(log_file):
+            try:
+                with open(log_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            log_data = json.loads(line)
+                            if log_data.get("answer_found") is True and log_data.get("confidence", 0.0) >= self.min_confidence_threshold:
+                                q_text = log_data.get("query")
+                                if q_text:
+                                    file_queries.append(q_text)
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.warning(f"Could not read local query logs for suggestions: {e}")
+
+        log_suggestions = []
+        all_logged_queries = set(db_queries + file_queries)
+        if all_logged_queries:
+            log_overlaps = {}
+            for lq in all_logged_queries:
+                lq_clean = lq.strip()
+                if not lq_clean:
+                    continue
+                if lq_clean.lower() == q_clean:
+                    continue
+                lq_lower = lq_clean.lower()
+                overlap = sum(1 for qw in query_words if qw in lq_lower)
+                if overlap > 0:
+                    if lq_clean not in log_overlaps or overlap > log_overlaps[lq_clean]:
+                        log_overlaps[lq_clean] = overlap
+            
+            sorted_logs = sorted(log_overlaps.keys(), key=lambda q: (-log_overlaps[q], len(q)))
+            for q_suggest in sorted_logs:
+                if q_suggest not in log_suggestions:
+                    log_suggestions.append(q_suggest)
+
+        # 3. Hardcoded / Deterministic fallbacks
+        matched_keys_suggestions = []
+        for key, suggs in deterministic_map.items():
+            key_words = set(key.split())
+            query_words_set = set(query_words_split)
+            if q_clean in key or key in q_clean or query_words_set.issubset(key_words) or key_words.issubset(query_words_set):
+                for s in suggs:
+                    if s not in matched_keys_suggestions:
+                        matched_keys_suggestions.append(s)
+
+        # Combine all with priority order and ensure case-insensitive uniqueness
+        final_suggestions = []
+        seen_lowered = set()
+        
+        def add_unique(s_list):
+            for s in s_list:
+                s_clean = s.strip()
+                if not s_clean:
+                    continue
+                s_lower = s_clean.lower()
+                if s_lower not in seen_lowered:
+                    seen_lowered.add(s_lower)
+                    final_suggestions.append(s_clean)
+        
+        add_unique(metadata_suggestions)
+        add_unique(log_suggestions)
+        add_unique(matched_keys_suggestions)
+        
+        generic_suggestions = [
+            "GST validation failed",
+            "PAN validation failure",
+            "MSME UDYAM registration guidelines"
+        ]
+        add_unique(generic_suggestions)
+        
+        return final_suggestions[:3]
 
 
 if __name__ == "__main__":

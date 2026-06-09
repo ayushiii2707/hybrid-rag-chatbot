@@ -147,7 +147,7 @@ def contains_requirement(text: str) -> bool:
 ANSWER_TYPE_REGISTRY: List[Dict] = [
     {
         "type": "url_link",
-        "query_signals": ["link", "url", "website", "portal", "site", "address", "navigate to", "go to", "access", "open"],
+        "query_signals": ["link", "url", "website", "portal", "site", "web address", "portal address", "navigate to", "go to", "access", "open"],
         "detector": contains_portal_link,
     },
     {
@@ -182,7 +182,7 @@ ANSWER_TYPE_REGISTRY: List[Dict] = [
     },
     {
         "type": "step_procedure",
-        "query_signals": ["how to", "steps", "procedure", "process", "instructions", "guide", "how do i", "how can i"],
+        "query_signals": ["how to", "steps", "procedure", "process", "instructions", "guide", "how do i", "how can i", "method"],
         "detector": contains_step_list,
     },
     {

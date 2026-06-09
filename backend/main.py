@@ -129,18 +129,7 @@ def login(request_data: LoginRequest, db: Session = Depends(get_db)):
 
 
 class QueryResponse(BaseModel):
-    query: str
-    corrected_query: str
-    query_granularity: str
-    answer_found: bool
-    confidence: float
-    confidence_band: str
-    synthesized_answer: str
-    source_file: Optional[str] = None
-    page_number: Optional[int] = None
-    blocked: bool
-    risk_level: str
-    message: str
+    answer: str
 
 @app.post("/query", response_model=QueryResponse)
 def query_endpoint(
@@ -150,7 +139,7 @@ def query_endpoint(
 ):
     """
     Executes a query against the RAG pipeline.
-    Optionally accepts a Bearer token in the Authorization header to record query ownership.
+    Returns a single clean answer — all retrieval internals are hidden.
     """
     user_id = user.get("user_id") if user else None
     email = user.get("email") if user else None
@@ -167,22 +156,19 @@ def query_endpoint(
 
     top_match = raw_response.get("top_match") or {}
 
-    # Strict production response shaping - returned payload is strictly limited to authorized fields
-    shaped_response = {
-        "query": raw_response.get("query", request_data.query),
-        "corrected_query": raw_response.get("corrected_query", ""),
-        "query_granularity": raw_response.get("query_granularity", ""),
-        "answer_found": raw_response.get("answer_found", False),
-        "confidence": raw_response.get("confidence", 0.0),
-        "confidence_band": raw_response.get("confidence_band", ""),
-        "synthesized_answer": raw_response.get("synthesized_answer") or top_match.get("answer_excerpt") or "",
-        "source_file": top_match.get("source_file"),
-        "page_number": top_match.get("page_number"),
-        "blocked": raw_response.get("blocked", False),
-        "risk_level": raw_response.get("risk_level", "low"),
-        "message": raw_response.get("message", "")
-    }
-    return shaped_response
+    # Derive the single clean answer — blocked queries get the policy message
+    if raw_response.get("blocked"):
+        answer = "This query violates enterprise security policies."
+    elif raw_response.get("answer_found") is False and raw_response.get("message"):
+        answer = raw_response["message"]
+    else:
+        answer = (
+            raw_response.get("synthesized_answer")
+            or top_match.get("answer_excerpt")
+            or "I could not find relevant information in the provided documents."
+        )
+
+    return {"answer": answer}
 
 
 @app.get("/protected-test")

@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 # ── Compiled patterns ─────────────────────────────────────────────────────────
 STEP_LABEL_PATTERN = re.compile(r'^\s*(?:Step|STEP|Stage|STAGE|Phase|PHASE)\s*(\d+)\b', re.IGNORECASE)
-STEP_NUM_PATTERN   = re.compile(r'^\s*(\d+(?:\.\d+)+|\d+)\.?\s*(.*)$')
+STEP_NUM_PATTERN   = re.compile(r'^\s*(\d+(?:\.\d+)+|\d+\.)\s*(.*)$')
 BULLET_PATTERN     = re.compile(r'^\s*(?:[•\-*➕])\s*(.*)$')
 
 # Sentence boundary split (used for minimal span extraction)

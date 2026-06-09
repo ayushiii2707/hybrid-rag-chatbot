@@ -1,4 +1,4 @@
-import json
+CTRL + Xsed -n '190,250p' embeddings/vector_store.pyimport json
 import logging
 import os
 from abc import ABC, abstractmethod
@@ -47,8 +47,8 @@ class FAISSVectorStore(BaseVectorStore):
         """
         Initializes the FAISSVectorStore. Loads storage configurations from config.json.
         """
-        self.index_path = os.path.join(os.path.dirname(__file__), "faiss_index.bin")
-        self.metadata_path = os.path.join(os.path.dirname(__file__), "metadata.json")
+        self.index_path = "backend/embeddings/faiss_index.bin"
+        self.metadata_path = "backend/embeddings/metadata.json"
 
         # Load paths from config
         if config_path is None:
@@ -66,23 +66,13 @@ class FAISSVectorStore(BaseVectorStore):
                 logger.warning(f"Could not load vector store settings from config: {e}")
 
         # Resolve paths to absolute relative to workspace root (which corresponds to CWD)
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.index_path = os.path.join(base_dir, "faiss_index.bin")
-        self.metadata_path = os.path.join(base_dir, "metadata.json")
+        self.index_path = os.path.abspath(self.index_path)
+        self.metadata_path = os.path.abspath(self.metadata_path)
 
         # In-memory structures
         self.index: Optional[faiss.Index] = None
         self.metadata_list: List[Dict[str, Any]] = []
         self.indexed_chunk_ids = set()
-
-        # IMPORTANT: always restore state
-        self.load_index()
-
-        # fallback safety (CRITICAL)
-        if self.index is None:
-            logger.warning("No FAISS index found. Creating empty index.")
-            dim = 384
-            self.index = faiss.IndexFlatIP(dim)
 
     def add_embeddings(self, embeddings: np.ndarray, metadata: List[Dict[str, Any]]) -> None:
         """
@@ -217,39 +207,38 @@ class FAISSVectorStore(BaseVectorStore):
             logger.error(f"Failed to persist index files to disk: {e}")
             raise IOError("Vector store persistence failed.") from e
 
-    def load_index(self):
-        import json
-        import faiss
-        import os
+    def load_index(self, index_path: Optional[str] = None, metadata_path: Optional[str] = None) -> None:
+        """
+        Loads the FAISS index binary and metadata JSON from disk, restoring duplicate filters.
+        """
+        idx_p = os.path.abspath(index_path or self.index_path)
+        meta_p = os.path.abspath(metadata_path or self.metadata_path)
 
-        # Load FAISS index
-        if os.path.exists(self.index_path):
-            self.index = faiss.read_index(self.index_path)
-            logger.info(f"Loaded FAISS index with {self.index.ntotal} vectors")
-        else:
-            logger.warning(f"FAISS index not found: {self.index_path}")
-            self.index = None
+        if not os.path.exists(idx_p) or not os.path.exists(meta_p):
+            logger.info("Persisted index files do not exist. Index starts empty.")
+            return
 
-        # Load metadata
-        if os.path.exists(self.metadata_path):
-            with open(self.metadata_path, "r", encoding="utf-8") as f:
+        try:
+            self.index = faiss.read_index(idx_p)
+            with open(meta_p, "r", encoding="utf-8") as f:
                 self.metadata_list = json.load(f)
-            logger.info(f"Loaded metadata: {len(self.metadata_list)} entries")
-        else:
-            logger.warning(f"Metadata not found: {self.metadata_path}")
-            self.metadata_list = []
 
-        # 🔥 CRITICAL: rebuild chunk tracking
-        self.indexed_chunk_ids = {
-            meta["chunk_id"] for meta in self.metadata_list
-            if "chunk_id" in meta
-        }
+            # Rebuild duplicate validation structure
+            self.indexed_chunk_ids = {meta["chunk_id"] for meta in self.metadata_list}
 
-        # 🔥 CRITICAL: alignment check
-        if self.index and self.index.ntotal != len(self.metadata_list):
-            logger.warning(
-                f"Mismatch detected: FAISS={self.index.ntotal}, metadata={len(self.metadata_list)}"
+            # Alignment guard validation
+            assert self.index.ntotal == len(self.metadata_list), (
+                f"Index/metadata alignment mismatch: index contains {self.index.ntotal} vectors "
+                f"but metadata file lists {len(self.metadata_list)} items."
             )
+
+            logger.info(
+                f"Successfully loaded index and metadata. "
+                f"Restored index size: {self.index.ntotal}."
+            )
+        except Exception as e:
+            logger.error(f"Failed to load index from disk: {e}")
+            raise IOError("Vector store loading failed.") from e
 
 
 if __name__ == "__main__":

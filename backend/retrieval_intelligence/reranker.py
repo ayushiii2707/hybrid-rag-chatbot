@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from advanced_confidence import AdvancedConfidenceScorer
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,8 @@ class Reranker:
         self,
         query: str,
         candidates: List[Dict[str, Any]],
-        keyword_scores: Dict[str, float]
+        keyword_scores: Dict[str, float],
+        original_query: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Reranks a list of candidate chunks for a query.
@@ -63,13 +64,88 @@ class Reranker:
             # Retrieve BM25 keyword score for this chunk
             keyword_score = keyword_scores.get(chunk_id, 0.0)
 
-            # Score the candidate using our advanced confidence formulas, passing cross-encoder score as semantic_score
+            # Retrieve ranks for retrieval agreement check
+            faiss_rank = cand.get("faiss_rank", 999)
+            bm25_rank = cand.get("bm25_rank", 999)
+            
+            agreement_detected = (faiss_rank <= 30) and (bm25_rank <= 30)
+            if agreement_detected:
+                # Compute decaying boost based on rank proximity (max boost = 0.03)
+                factor_faiss = 1.0 - ((faiss_rank - 1) / 30.0)
+                factor_bm25 = 1.0 - ((bm25_rank - 1) / 30.0)
+                factor_faiss = max(0.0, min(1.0, factor_faiss))
+                factor_bm25 = max(0.0, min(1.0, factor_bm25))
+                agreement_boost = round(0.03 * factor_faiss * factor_bm25, 4)
+            else:
+                agreement_boost = 0.0
+
+            # Developer Logging
+            logger.info(
+                f"[RetrievalAgreement] Candidate ID: {chunk_id} | "
+                f"Semantic Rank: {faiss_rank} | "
+                f"BM25 Rank: {bm25_rank} | "
+                f"Agreement Detected: {agreement_detected} | "
+                f"Agreement Boost Applied: {agreement_boost:.4f}"
+            )
+
+            # Calculate source agreement metrics for this candidate against all candidate chunks
+            meta = cand.get("metadata", {})
+            proc_id = meta.get("procedure_id")
+            sec_title = meta.get("section_title")
+            
+            supporting_list = []
+            for other in candidates:
+                if other["chunk_id"] == chunk_id:
+                    supporting_list.append(other)
+                    continue
+                
+                other_meta = other.get("metadata", {})
+                other_proc = other_meta.get("procedure_id")
+                other_sec = other_meta.get("section_title")
+                
+                matches = False
+                if proc_id and other_proc == proc_id:
+                    matches = True
+                elif sec_title and other_sec == sec_title:
+                    matches = True
+                
+                if matches:
+                    supporting_list.append(other)
+            
+            supporting_chunks = len(supporting_list)
+            supporting_documents = len(set(other.get("metadata", {}).get("source_file") for other in supporting_list if other.get("metadata", {}).get("source_file")))
+            
+            source_agreement_detected = (supporting_chunks >= 2)
+            if source_agreement_detected:
+                raw_source_boost = 0.005 * supporting_chunks + 0.005 * supporting_documents - 0.01
+                source_agreement_boost = round(min(0.03, max(0.0, raw_source_boost)), 4)
+            else:
+                source_agreement_boost = 0.0
+
+            # Developer Logging
+            logger.info(
+                f"[SourceAgreement] Candidate ID: {chunk_id} | "
+                f"Supporting Chunks: {supporting_chunks} | "
+                f"Supporting Documents: {supporting_documents} | "
+                f"Source Agreement Detected: {source_agreement_detected} | "
+                f"Source Agreement Boost Applied: {source_agreement_boost:.4f}"
+            )
+
+            # Score the candidate using our advanced confidence formulas, passing cross-encoder score as semantic_score, retrieval agreement boost, and source agreement boost
             score_details = self.scorer.score_candidate(
-                query=query,
+                query=original_query if original_query is not None else query,
                 chunk_text=chunk_text,
                 semantic_score=ce_score,
                 keyword_score=keyword_score,
-                chunk_metadata=cand.get("metadata", {})
+                chunk_metadata=cand.get("metadata", {}),
+                agreement_boost=agreement_boost,
+                agreement_detected=agreement_detected,
+                faiss_rank=faiss_rank,
+                bm25_rank=bm25_rank,
+                source_agreement_boost=source_agreement_boost,
+                source_agreement_detected=source_agreement_detected,
+                supporting_chunks=supporting_chunks,
+                supporting_documents=supporting_documents
             )
 
             # Build rich scored chunk dictionary

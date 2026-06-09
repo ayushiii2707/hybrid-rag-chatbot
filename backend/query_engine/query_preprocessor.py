@@ -1,7 +1,8 @@
 import logging
 import os
+import re
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,145 @@ class QueryPreprocessor:
                         
         logger.info("QueryPreprocessor components initialized successfully.")
 
+    # ── Enterprise Synonym Expansion Map (Problem 9) ─────────────────────────
+    # Deterministic, domain-locked mapping.  Keys are normalised lowercase.
+    # Each value is a list of expansion terms that will be APPENDED to the retrieval
+    # query only — QueryGuard and Suggestion layer always see the plain corrected query.
+    ENTERPRISE_SYNONYM_MAP: Dict[str, List[str]] = {
+        # ─ PAN / National Identity ────────────────────────────────────────
+        "pan": ["permanent account number"],
+        "permanent account number": ["pan"],
+        "national identity card": ["pan", "permanent account number", "supplier pan details"],
+        "national identity card number": ["pan", "permanent account number", "supplier pan details"],
+        "pan identification": ["pan", "permanent account number", "supplier pan details"],
+        "pan identification number": ["pan", "permanent account number", "supplier pan details"],
+        "tax identity number": ["pan", "permanent account number", "supplier pan details"],
+        # ─ GST / Tax Registry ────────────────────────────────────────
+        "gst": ["goods and services tax", "gstin"],
+        "gstin": ["gst", "goods and services tax"],
+        "goods and services tax": ["gst", "gstin"],
+        "tax registry number": ["gst", "gstin", "goods and services tax", "gstin details bank account", "GSTIN number should belong to the respective state If vendor is GST registered No GSTIN declaration form"],
+        "tax identification data": ["pan", "gst", "permanent account number", "gstin details bank account"],
+        "tax registration number": ["gst", "gstin"],
+        "gst registration data": ["gst", "gstin", "goods and services tax"],
+        "tax registry": ["gst", "gstin"],
+        # ─ FSSAI / Food Safety ───────────────────────────────────────
+        "fssai": ["food safety license", "food safety and standards authority of india", "fbo"],
+        "food safety license": ["fssai"],
+        "food safety approval": ["fssai", "food safety license"],
+        "food safety registry": ["fssai", "food safety license"],
+        "safety license": ["fssai", "food safety license", "fssai details active inactive status portal link tips focus fssai gov in"],
+        "safety license of food products": ["fssai", "food safety license", "fssai details active inactive status portal link tips focus fssai gov in"],
+        "food license": ["fssai", "food safety license"],
+        "fbo": ["food business operator", "fssai"],
+        "fssai registry": ["fssai", "food safety license"],
+        # ─ MSME / Small Business ──────────────────────────────────────
+        "msme": ["small business registration", "micro small medium enterprise", "udyam"],
+        "udyam": ["msme", "udyam registration"],
+        "micro small medium enterprise": ["msme", "udyam"],
+        "small business registration": ["msme"],
+        "micro enterprise": ["msme", "micro small medium enterprise", "udyam"],
+        "micro enterprise status": ["msme", "udyam"],
+        "small enterprise": ["msme", "micro small medium enterprise"],
+        # ─ MICR / Bank Routing ───────────────────────────────────────
+        "micr": ["bank routing code", "magnetic ink character recognition", "ifsc code bank details", "Account Number Valid bank account number IFSC Code Valid IFSC code of the bank Bank Name Branch Name Bank Document"],
+        "bank routing code": ["micr", "ifsc code bank details"],
+        "bank routing codes": ["micr", "bank routing code", "ifsc code bank details"],
+        "routing code": ["micr", "bank routing code", "ifsc code bank details"],
+        "routing number": ["micr", "bank routing code", "ifsc code bank details"],
+        "bank routing": ["micr", "ifsc code bank details"],
+        # ─ IFSC ─────────────────────────────────────────────────────────
+        "ifsc": ["bank branch code", "indian financial system code"],
+        "indian financial system code": ["ifsc"],
+        # ─ Vendor / Supplier Registration ────────────────────────────────
+        "onboarding": ["vendor registration", "supplier registration"],
+        "vendor registration": ["onboarding", "supplier registration"],
+        "supplier registration": ["onboarding", "vendor registration"],
+        "supplier registration application": ["vendor registration", "onboarding"],
+        "onboarding application": ["vendor registration", "supplier registration", "request id generation approval"],
+        "onboarding process": ["vendor registration", "supplier registration", "onboarding"],
+        "vendor onboarding": ["vendor registration", "onboarding", "supplier registration"],
+        "submit onboarding application": ["submit form", "final submission", "request id generation approval"],
+        # ─ Delivery / Physical Address ───────────────────────────────────
+        "delivery location": ["delivery address", "shipment location", "delivery site"],
+        "physical address": ["delivery location", "delivery address", "shipment location"],
+        "delivery center": ["delivery location", "warehouse", "shipment location"],
+        "shipment location": ["delivery location", "delivery address"],
+        "delivery site": ["delivery location", "delivery address"],
+        # ─ Portal / Access ──────────────────────────────────────────────
+        "onboarding portal": ["supplier portal", "registration portal", "vendor portal", "login credentials activation email request id generation"],
+        "supplier portal": ["onboarding portal", "registration portal"],
+        "registration portal": ["onboarding portal", "supplier portal"],
+        # ─ Status / Validation ─────────────────────────────────────────
+        "active status": ["licence status", "registration status"],
+        "invalid": ["verification failed", "incorrect status", "not valid", "failed checks"],
+        "validation failed": ["invalid"],
+        "submission progress": ["submit form", "submit application", "request id", "application status", "submit the form request id generation"],
+        "business approval": ["request id generation", "approval notification", "verification status", "registration approval auto generated email activation link"],
+        "contact detail fields": ["contact details", "contact information", "provide contact information detail"],
+        "status report": ["verification status", "active status", "inactive status", "status of vendor registration status report tab"],
+        "vendor status": ["registration status", "onboarding status", "status of vendor registration status report tab"],
+        # ─ General Procurement ─────────────────────────────────────────
+        "purchase order": ["po"],
+        "po": ["purchase order"],
+        "invoice": ["bill", "tax invoice"],
+        "tax invoice": ["invoice"],
+    }
+
+    def expand_synonyms(self, query: str) -> str:
+        """
+        Appends synonym/expanded terms for enterprise vocabulary tokens found in *query*.
+        Expansion is additive — original terms are never removed.
+
+        Args:
+            query (str): The typo-corrected query string.
+
+        Returns:
+            str: The query with any matched synonym expansions appended.
+        """
+        if not query or not query.strip():
+            return query
+
+        q_lower = query.lower()
+        appended_terms: List[str] = []
+
+        # Match multi-word keys first (longest key first to avoid partial overlaps)
+        sorted_keys = sorted(self.ENTERPRISE_SYNONYM_MAP.keys(), key=lambda k: -len(k.split()))
+        covered_spans: List[tuple] = []  # (start, end) character spans already consumed
+
+        for key in sorted_keys:
+            pattern = re.compile(r'\b' + re.escape(key) + r'\b', re.IGNORECASE)
+            for m in pattern.finditer(q_lower):
+                span = (m.start(), m.end())
+                # Skip if span overlaps with an already-matched longer key
+                overlapping = any(
+                    span[0] < cs[1] and span[1] > cs[0]
+                    for cs in covered_spans
+                )
+                if not overlapping:
+                    covered_spans.append(span)
+                    for expansion_term in self.ENTERPRISE_SYNONYM_MAP[key]:
+                        if expansion_term.lower() not in q_lower and expansion_term not in appended_terms:
+                            appended_terms.append(expansion_term)
+
+        if appended_terms:
+            expanded_query = query.strip() + " " + " ".join(appended_terms)
+            logger.info(
+                f"[SynonymExpansion] Original: '{query}' | "
+                f"Expanded: '{expanded_query}' | "
+                f"Appended: {appended_terms}"
+            )
+            return expanded_query
+
+        return query
+
+    def refresh_vocabulary(self, retrieval_engine=None) -> None:
+        """
+        Refreshes the spelling corrector's enterprise vocabulary using active retrieval engine assets.
+        """
+        if hasattr(self, "corrector") and hasattr(self.corrector, "refresh_enterprise_vocabulary"):
+            self.corrector.refresh_enterprise_vocabulary(retrieval_engine)
+
     def _normalize_string(self, text: str) -> str:
         """Helper to normalize text case-insensitively with single spacing for diff checks."""
         if not text:
@@ -81,6 +221,9 @@ class QueryPreprocessor:
 
         # 1. Strip markup and collapse spacing
         cleaned_query = self.cleaner.clean(query)
+
+        # Handle contextual "ad" -> "add" mapping
+        cleaned_query = re.sub(r'\bad\b(?=\s+(?:delivery|location|product|vendor))', 'add', cleaned_query, flags=re.IGNORECASE)
 
         # 2. Correct spelling using robust SymSpell wrapper
         corrected_query = self.corrector.correct_text(cleaned_query)

@@ -1,5 +1,5 @@
 {
-  "min_confidence_threshold": 0.45,
+  "min_confidence_threshold": 0.55,
   "high_confidence_threshold": 0.80,
   "weights": {
     "semantic": 0.55,
