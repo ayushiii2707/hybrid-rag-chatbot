@@ -74,6 +74,111 @@ def main() -> None:
     # We can check that the chunks on the same page don't have gaps (character text content overlap is present)
     print("Recursive Chunking tests PASSED.")
 
+    # 4. Verify Enterprise Section Heading Detection
+    print("\n--- Testing Enterprise Section Heading Detection ---")
+    mock_enterprise_doc = {
+        "doc_id": "enterprise_test_123",
+        "source_file": "enterprise_policy.pdf",
+        "pages": [
+            {
+                "page_number": 1,
+                "clean_text": "Purpose\nThis document describes the scope of work."
+            },
+            {
+                "page_number": 2,
+                "clean_text": "Eligibility\nOnly registered vendors are eligible."
+            },
+            {
+                "page_number": 3,
+                "clean_text": "1.0 Introduction\nStep 1: Get started\nPerform the initial login."
+            }
+        ]
+    }
+    
+    enterprise_chunker = DocumentChunker(strategy="recursive", chunk_size=200, chunk_overlap=10)
+    ent_chunks = enterprise_chunker.chunk_document(mock_enterprise_doc)
+    
+    print("\nEnterprise Chunks:")
+    print(json.dumps(ent_chunks, indent=2))
+    
+    # Assertions
+    # Page 1 chunk should have section_title="Purpose", subsection_title=None
+    p1_chunks = [c for c in ent_chunks if c["page_number"] == 1]
+    assert len(p1_chunks) > 0, "Expected chunks for page 1"
+    assert p1_chunks[0]["metadata"]["section_title"] == "Purpose", f"Expected 'Purpose', got {p1_chunks[0]['metadata']['section_title']}"
+    assert p1_chunks[0]["metadata"]["subsection_title"] is None
+    
+    # Page 2 chunk should have section_title="Eligibility", subsection_title=None
+    p2_chunks = [c for c in ent_chunks if c["page_number"] == 2]
+    assert len(p2_chunks) > 0, "Expected chunks for page 2"
+    assert p2_chunks[0]["metadata"]["section_title"] == "Eligibility", f"Expected 'Eligibility', got {p2_chunks[0]['metadata']['section_title']}"
+    assert p2_chunks[0]["metadata"]["subsection_title"] is None
+    
+    # Page 3 chunk should have section_title="1.0 Introduction", subsection_title="Step 1: Get started"
+    p3_chunks = [c for c in ent_chunks if c["page_number"] == 3]
+    assert len(p3_chunks) > 0, "Expected chunks for page 3"
+    assert p3_chunks[0]["metadata"]["section_title"] == "1.0 Introduction", f"Expected '1.0 Introduction', got {p3_chunks[0]['metadata']['section_title']}"
+    assert p3_chunks[0]["metadata"]["subsection_title"] == "Step 1: Get started", f"Expected 'Step 1: Get started', got {p3_chunks[0]['metadata']['subsection_title']}"
+    print("Enterprise Section Heading Detection tests PASSED.")
+
+    # 5. Verify Deduplication Logic
+    print("\n--- Testing Chunk Deduplication ---")
+    mock_duplicate_doc = {
+        "doc_id": "duplicate_test_123",
+        "source_file": "duplicate_policy.pdf",
+        "pages": [
+            {
+                "page_number": 1,
+                "clean_text": "Step 1: Get started\nPerform the initial login.\nStep 1: Get started\nPerform the initial login."
+            }
+        ]
+    }
+    
+    duplicate_chunker = DocumentChunker(strategy="recursive", chunk_size=100, chunk_overlap=10)
+    dup_chunks = duplicate_chunker.chunk_document(mock_duplicate_doc)
+    
+    print("\nDeduplicated Chunks:")
+    print(json.dumps(dup_chunks, indent=2))
+    
+    # Assertions
+    # Page 1 should only produce 1 unique chunk instead of 2 identical ones
+    assert len(dup_chunks) == 1, f"Expected exactly 1 chunk after deduplication, got {len(dup_chunks)}"
+    assert dup_chunks[0]["metadata"]["section_title"] is None
+    assert dup_chunks[0]["metadata"]["subsection_title"] == "Step 1: Get started"
+    print("Chunk Deduplication tests PASSED.")
+
+    # 6. Verify Tiny Chunk Consolidation / Merging Logic
+    print("\n--- Testing Tiny Chunk Consolidation ---")
+    mock_tiny_doc = {
+        "doc_id": "tiny_test_123",
+        "source_file": "tiny_policy.pdf",
+        "pages": [
+            {
+                "page_number": 1,
+                "clean_text": "Step 1: Get started\n"
+                              "This is a very long line designed to fill up the chunk size limit so that the next unit is forced to overflow. "
+                              "It contains many characters and words to ensure it reaches around three hundred and fifty characters long.\n"
+                              "1. Short step."
+            }
+        ]
+    }
+    
+    tiny_chunker = DocumentChunker(strategy="recursive", chunk_size=300, chunk_overlap=10)
+    tiny_chunks = tiny_chunker.chunk_document(mock_tiny_doc)
+    
+    print("\nConsolidated Chunks:")
+    print(json.dumps(tiny_chunks, indent=2))
+    
+    # Assertions
+    # Since Step 1 + long line is ~360 chars, it overflows chunk_size=300.
+    # The next step unit '1. Short step.' is only ~15 chars.
+    # With merging enabled, it should be merged into the overflow chunk instead of being emitted standalone.
+    # Therefore, we expect 1 consolidated chunk or only non-tiny chunks.
+    # Let's verify that no standalone tiny chunks (< 100 chars) are produced.
+    for chunk in tiny_chunks:
+        assert len(chunk["text"]) >= 100, f"Tiny chunk found: {len(chunk['text'])} chars - {repr(chunk['text'])}"
+    print("Tiny Chunk Consolidation tests PASSED.")
+
     print("\n=======================================================")
     print("SUCCESS: Text Chunking module verified successfully.")
     print("=======================================================")

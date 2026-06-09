@@ -112,6 +112,9 @@ def classify_query_granularity(query: str) -> str:
 
     for kw in _PROCEDURAL_KEYWORDS:
         if kw in q:
+            # Bypass procedural classification for generic process terms if query seeks overview/purpose (explanatory intent)
+            if kw in ("process for", "registration process") and any(ew in q for ew in _EXPLANATORY_KEYWORDS) and "step" not in q:
+                continue
             logger.info(f"Query granularity: procedural (matched '{kw}')")
             return "procedural"
 

@@ -9,6 +9,11 @@ SECTION_RE = re.compile(
     r'^\s*(?:[A-Z]\.\s+([A-Z0-9][A-Za-z0-9\s:,\-\(\)/&]{2,100}\.?)|[Tt]able\s+of\s+[Cc]ontents|[Aa]dditional\s+[Ii]nformation)\s*$'
 )
 
+ENTERPRISE_SECTION_RE = re.compile(
+    r'^\s*(?:(?:[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)\s*[-.:]?\s+)?(Purpose|Scope|Eligibility|Applicability|Prerequisites|Overview|Introduction|Description|Notes|Definitions|Responsibilities|Process|Procedure|Steps|Approval\s+Matrix|Business\s+Rules|Inputs|Outputs)\s*[:.]?\s*$',
+    re.IGNORECASE
+)
+
 SUBSECTION_RE = re.compile(
     r'^\s*(Step|Stage|Phase)\s+(\d+)\s*(?::|\.|\s-)\s*(.+)$',
     re.IGNORECASE
@@ -78,6 +83,10 @@ def parse_heading(line: str):
     if sec_match:
         return "section", line_stripped
         
+    enterprise_sec_match = ENTERPRISE_SECTION_RE.match(line_stripped)
+    if enterprise_sec_match:
+        return "section", line_stripped
+        
     # Try subsection matching
     subsec_match = SUBSECTION_RE.match(line_stripped)
     if subsec_match:
@@ -132,7 +141,11 @@ def group_lines_into_steps(lines: List[str]) -> List[List[str]]:
     for line in lines:
         line_stripped = line.strip()
         is_boundary = bool(STEP_BOUNDARY_RE.match(line_stripped))
-        is_heading = bool(SECTION_RE.match(line_stripped) or SUBSECTION_RE.match(line_stripped))
+        is_heading = bool(
+            SECTION_RE.match(line_stripped) or
+            ENTERPRISE_SECTION_RE.match(line_stripped) or
+            SUBSECTION_RE.match(line_stripped)
+        )
         
         if (is_boundary or is_heading) and current_unit:
             step_units.append(current_unit)
@@ -380,7 +393,38 @@ class DocumentChunker:
             if len(current_units) > 1:
                 i = last_added_idx
                 
-        return chunks
+        # Merge tiny chunks with previous chunk if safe to avoid low-information fragments
+        merged_chunks = []
+        tiny_threshold = min(150, self.chunk_size // 3)
+        for chunk_text in chunks:
+            if not chunk_text.strip():
+                continue
+            if not merged_chunks:
+                merged_chunks.append(chunk_text)
+                continue
+            
+            prev_chunk = merged_chunks[-1]
+            # Check if either chunk is tiny (e.g. < tiny_threshold characters)
+            # and combined length fits in chunk_size + tiny_threshold
+            if (len(chunk_text) < tiny_threshold or len(prev_chunk) < tiny_threshold) and (len(prev_chunk) + len(chunk_text) + 1 <= self.chunk_size + tiny_threshold):
+                prev_lines = prev_chunk.split('\n')
+                curr_lines = chunk_text.split('\n')
+                
+                common_count = 0
+                for pl, cl in zip(prev_lines, curr_lines):
+                    if pl.strip() == cl.strip():
+                        common_count += 1
+                    else:
+                        break
+                
+                suffix = "\n".join(curr_lines[common_count:])
+                if suffix.strip():
+                    if suffix.strip() not in prev_chunk:
+                        merged_chunks[-1] = prev_chunk + "\n" + suffix
+            else:
+                merged_chunks.append(chunk_text)
+                
+        return merged_chunks
 
     def chunk_document(self, preprocessed_doc: Dict[str, Any]) -> List[Dict[str, Any]]:
         doc_id = preprocessed_doc["doc_id"]
@@ -464,6 +508,16 @@ class DocumentChunker:
                                 "detected_step_numbers": extract_step_numbers(split_text)
                             }
                         })
+
+        # Deduplicate exact duplicate chunks (same page number and same text content)
+        deduplicated_chunks = []
+        seen_chunks = set()
+        for chunk in chunks_output:
+            key = (chunk["page_number"], chunk["text"])
+            if key not in seen_chunks:
+                seen_chunks.add(key)
+                deduplicated_chunks.append(chunk)
+        chunks_output = deduplicated_chunks
 
         total_chunks = len(chunks_output)
         for idx, chunk in enumerate(chunks_output):

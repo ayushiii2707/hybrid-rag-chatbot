@@ -5,6 +5,7 @@ from typing import Optional, Dict, Any
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBearer
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
@@ -49,6 +50,15 @@ app = FastAPI(
     description="Enterprise Multi-User RAG Platform Foundation",
     version="1.0.0",
     lifespan=lifespan
+)
+
+# Register CORS Middleware — must be added before JWT middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5001"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
 )
 
 # Register JWT Middleware
