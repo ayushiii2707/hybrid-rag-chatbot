@@ -15,6 +15,7 @@ logger = logging.getLogger("verify_embeddings")
 # ── Bootstrap Paths ───────────────────────────────────────────────────────────
 # backend/embeddings/verify_embeddings.py -> parent.parent is backend/
 BACKEND_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BACKEND_DIR))
 sys.path.insert(0, str(BACKEND_DIR / "ingestion"))
 sys.path.insert(0, str(BACKEND_DIR / "preprocessing"))
 sys.path.insert(0, str(BACKEND_DIR / "chunking"))
@@ -33,6 +34,51 @@ try:
 except ImportError as e:
     logger.critical(f"Failed to import pipeline dependencies: {e}")
     sys.exit(1)
+
+
+def parse_faq_json(json_path: Path, mapped_pdf_name: str, pdf_doc_id: str) -> list:
+    logger.info(f"Ingesting & processing FAQ dataset: {json_path.name}")
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load FAQ JSON at {json_path}: {e}")
+        return []
+    
+    faq_chunks = []
+    faqs = data.get("faqs", [])
+    for idx, faq in enumerate(faqs):
+        intent = faq.get("intent", f"intent_{idx}")
+        category = faq.get("category", "general")
+        q = faq.get("question", "")
+        a = faq.get("answer", "")
+        alternate_phrasings = faq.get("alternate_phrasings", [])
+        
+        chunk_text = f"Question: {q}\nAnswer: {a}"
+        
+        chunk = {
+            "chunk_id": f"{pdf_doc_id}_faq_{intent}",
+            "doc_id": pdf_doc_id,
+            "source_file": mapped_pdf_name,
+            "page_number": 1,
+            "chunk_index": idx,
+            "text": chunk_text,
+            "metadata": {
+                "source_file": mapped_pdf_name,
+                "page_number": 1,
+                "char_count": len(chunk_text),
+                "section_title": "FAQ",
+                "subsection_title": category,
+                "procedure_id": f"faq_{intent}",
+                "chunk_position": "start",
+                "page_order": 0,
+                "detected_step_numbers": [],
+                "alternate_phrasings": alternate_phrasings
+            }
+        }
+        faq_chunks.append(chunk)
+    logger.info(f"FAQ dataset {json_path.name} processed into {len(faq_chunks)} chunks.")
+    return faq_chunks
 
 
 def test_retrieval(engine: RetrievalEngine, query: str) -> None:
@@ -83,9 +129,11 @@ def main() -> None:
 
     # 3. Parse, Preprocess, and Chunk PDFs
     all_chunks = []
+    pdf_filename_to_doc_id = {}
     for path in pdf_paths:
         logger.info(f"Ingesting & processing document: {path.name}")
         parsed_doc = parser.parse_pdf(path)
+        pdf_filename_to_doc_id[path.name] = parsed_doc["doc_id"]
         
         preprocessed_pages = []
         for pg in parsed_doc["pages"]:
@@ -119,7 +167,24 @@ def main() -> None:
         all_chunks.extend(doc_chunks)
         logger.info(f"Document {path.name} processed into {len(doc_chunks)} chunks.")
 
-    logger.info(f"Total chunks generated across all documents: {len(all_chunks)}")
+    # Parse and Ingest FAQ JSON Datasets
+    faq_files = [
+        ("delivery_location_faq.json", "Add Delivery Location User Manual.pdf"),
+        ("registration_manual_faq.json", "registration manual.pdf")
+    ]
+    for faq_filename, mapped_pdf_name in faq_files:
+        faq_path = BACKEND_DIR / "datasets" / faq_filename
+        if faq_path.exists():
+            pdf_doc_id = pdf_filename_to_doc_id.get(mapped_pdf_name)
+            if not pdf_doc_id:
+                import hashlib
+                pdf_doc_id = hashlib.sha256(faq_filename.encode()).hexdigest()
+            faq_chunks = parse_faq_json(faq_path, mapped_pdf_name, pdf_doc_id)
+            all_chunks.extend(faq_chunks)
+        else:
+            logger.warning(f"FAQ dataset file not found: {faq_path}")
+
+    logger.info(f"Total chunks generated across all sources: {len(all_chunks)}")
 
     # 4. Initialize Embedding and Vector Store Layers
     logger.info("Initializing EmbeddingGenerator and FAISSVectorStore...")

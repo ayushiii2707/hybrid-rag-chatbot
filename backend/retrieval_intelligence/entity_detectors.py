@@ -100,13 +100,14 @@ def contains_phone(text: str) -> bool:
 
 
 def contains_gstin(text: str) -> bool:
-    """Returns True if the text contains a GSTIN (15-char alphanumeric tax ID)."""
-    return bool(_GSTIN_PATTERN.search(text))
+    """Returns True if the text contains a GSTIN (15-char alphanumeric tax ID) or mentions GST/GSTIN."""
+    return bool(_GSTIN_PATTERN.search(text) or "gst" in text.lower())
 
 
 def contains_pan(text: str) -> bool:
-    """Returns True if the text contains an Indian PAN number."""
-    return bool(_PAN_PATTERN.search(text))
+    """Returns True if the text contains an Indian PAN number or mentions PAN."""
+    return bool(_PAN_PATTERN.search(text) or "pan" in text.lower())
+
 
 
 def contains_date(text: str) -> bool:

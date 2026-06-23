@@ -1,0 +1,1304 @@
+[
+  {
+    "query": "What format should the UDYAM certificate be uploaded in?",
+    "corrected": "What format should the UDYAM certificate be uploaded in?",
+    "expanded": "What format should the UDYAM certificate be uploaded in? msme udyam registration udyam validation rules udyam number format udyam verification udyam validity",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_format",
+        "score": 0.9911,
+        "faiss": 0.8518,
+        "ce": 0.9959,
+        "bm25": 0.7679,
+        "text_snippet": "Question: What is the UDYAM (MSME) number format? Answer: Format: UDYAM-XX-XX-XXXXXXX. The document states it should be 16 characters; first 5 are 'UDYAM', next 2 are alphabetic letters (A-Z), next 2 ..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c22",
+        "score": 0.9762,
+        "faiss": 0.841,
+        "ce": 0.9982,
+        "bm25": 0.7876,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.2. Validation rules for UDYAM (MSME) number. Should be 16 characters long Format to input as \u201cUDYAM-XX-XX-XXXXXXX\u201d Initial 5 characters should ..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_udyam_format",
+        "score": 0.9581,
+        "faiss": 0.8466,
+        "ce": 0.9888,
+        "bm25": 0.754,
+        "text_snippet": "Question: What is the format for the UDYAM (MSME) number? Answer: The UDYAM number must follow this format: UDYAM-XX-XX-XXXXXXX. It is 19 characters long. First 5 characters: 'UDYAM'. Next 2: alphabet..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c12",
+        "score": 0.9388,
+        "faiss": 0.8164,
+        "ce": 0.9832,
+        "bm25": 0.6683,
+        "text_snippet": "Table of Contents Step 2: Supplier PAN details 2.10. Validity Year - refer latest classification date in Enterprise Type of UDYAM certificate and add correct year from the calendar in \u201cFrom\u201d field\u201d. I..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+        "score": 0.9189,
+        "faiss": 0.8694,
+        "ce": 0.9839,
+        "bm25": 0.6712,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+      }
+    ],
+    "answer_found": true,
+    "confidence": 0.9911,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_format",
+    "final_answer": "Format: UDYAM-XX-XX-XXXXXXX. The document states it should be 16 characters; first 5 are 'UDYAM', next 2 are alphabetic letters (A-Z), next 2 are numeric digits (0-9), and the last 7 are numeric digits. Each part is separated by a hyphen.",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_upload_format",
+    "best_kw_hits": 6,
+    "best_kw_snippet": "Question: What format should the UDYAM certificate be uploaded in? Answer: Upload the scanned copy of the UDYAM (MSME) certificate in PDF or JPG format."
+  },
+  {
+    "query": "How can I verify my UDYAM number?",
+    "corrected": "How can I verify my UDYAM number?",
+    "expanded": "How can I verify my UDYAM number? msme udyam registration udyam validation rules udyam number format udyam verification udyam validity",
+    "granularity": "procedural",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c22",
+        "score": 0.9998,
+        "faiss": 0.8585,
+        "ce": 0.9981,
+        "bm25": 0.8378,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.2. Validation rules for UDYAM (MSME) number. Should be 16 characters long Format to input as \u201cUDYAM-XX-XX-XXXXXXX\u201d Initial 5 characters should ..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_format",
+        "score": 0.9852,
+        "faiss": 0.8505,
+        "ce": 0.9835,
+        "bm25": 0.7721,
+        "text_snippet": "Question: What is the UDYAM (MSME) number format? Answer: Format: UDYAM-XX-XX-XXXXXXX. The document states it should be 16 characters; first 5 are 'UDYAM', next 2 are alphabetic letters (A-Z), next 2 ..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c10",
+        "score": 0.9816,
+        "faiss": 0.847,
+        "ce": 0.999,
+        "bm25": 0.985,
+        "text_snippet": "Table of Contents Step 2: Supplier PAN details 2.7. Fill UDYAM (MSME) related data in the following section.  2.8.Validation rules for UDYAM (MSME) number.         2.9. Refer UDYAM (MSME) certificate ..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+        "score": 0.9804,
+        "faiss": 0.8673,
+        "ce": 0.9981,
+        "bm25": 0.7603,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_udyam_format",
+        "score": 0.9675,
+        "faiss": 0.8557,
+        "ce": 0.9796,
+        "bm25": 0.8309,
+        "text_snippet": "Question: What is the format for the UDYAM (MSME) number? Answer: The UDYAM number must follow this format: UDYAM-XX-XX-XXXXXXX. It is 19 characters long. First 5 characters: 'UDYAM'. Next 2: alphabet..."
+      }
+    ],
+    "answer_found": true,
+    "confidence": 0.9998,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c22",
+    "final_answer": "1. A. Add Delivery Location Process\n\nStep 8: MSME Details.\n\n8.1. Fill UDYAM (MSME) related data in the following section.\n\n8.2. Validation rules for UDYAM (MSME) number. Should be 16 characters long Format to input as \u201cUDYAM-XX-XX-XXXXXXX\u201d Initial 5 characters should be UDYAM Next two characters are exactly 2 alphabetic letters (A-Z) Next two characters are exactly 2 numeric digits (0-9) Next seve",
+    "best_kw_chunk": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c14",
+    "best_kw_hits": 3,
+    "best_kw_snippet": "Table of Contents Step 2: Supplier PAN details New Merchandise Vendor Registration on Supplier Registration Portal __________________________________________________________________________________  _..."
+  },
+  {
+    "query": "check UDYAM status",
+    "corrected": "check UDYAM status",
+    "expanded": "check UDYAM status msme udyam registration udyam validation rules udyam number format udyam verification udyam validity",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+        "score": 1.0,
+        "faiss": 0.853,
+        "ce": 0.998,
+        "bm25": 0.8793,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c22",
+        "score": 0.9906,
+        "faiss": 0.8503,
+        "ce": 0.9969,
+        "bm25": 0.8498,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.2. Validation rules for UDYAM (MSME) number. Should be 16 characters long Format to input as \u201cUDYAM-XX-XX-XXXXXXX\u201d Initial 5 characters should ..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c10",
+        "score": 0.9779,
+        "faiss": 0.8476,
+        "ce": 0.9982,
+        "bm25": 1.0,
+        "text_snippet": "Table of Contents Step 2: Supplier PAN details 2.7. Fill UDYAM (MSME) related data in the following section.  2.8.Validation rules for UDYAM (MSME) number.         2.9. Refer UDYAM (MSME) certificate ..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_format",
+        "score": 0.9734,
+        "faiss": 0.8401,
+        "ce": 0.9832,
+        "bm25": 0.7718,
+        "text_snippet": "Question: What is the UDYAM (MSME) number format? Answer: Format: UDYAM-XX-XX-XXXXXXX. The document states it should be 16 characters; first 5 are 'UDYAM', next 2 are alphabetic letters (A-Z), next 2 ..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_udyam_format",
+        "score": 0.9507,
+        "faiss": 0.8462,
+        "ce": 0.9736,
+        "bm25": 0.8149,
+        "text_snippet": "Question: What is the format for the UDYAM (MSME) number? Answer: The UDYAM number must follow this format: UDYAM-XX-XX-XXXXXXX. It is 19 characters long. First 5 characters: 'UDYAM'. Next 2: alphabet..."
+      }
+    ],
+    "answer_found": true,
+    "confidence": 1.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+    "final_answer": "In \u201cto\u201d field mention as \u201c9999\u201d. You may check the current status of UDYAM number from the portal through below menu option in following link\n\nYou may check the current status of UDYAM number from the portal through below menu option in following link",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+    "best_kw_hits": 3,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+  },
+  {
+    "query": "UDYAM From and To dates",
+    "corrected": "UDYAM From and To dates",
+    "expanded": "UDYAM From and To dates msme udyam registration",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_date_of_issue",
+        "score": 0.9727,
+        "faiss": 0.9087,
+        "ce": 0.9987,
+        "bm25": 0.8784,
+        "text_snippet": "Question: What date do I enter in the UDYAM Date of Issue field? Answer: Refer to the 'Date of UDYAM Registration' section on your UDYAM (MSME) certificate and select the matching date from the calend..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_udyam_date_of_issue",
+        "score": 0.9526,
+        "faiss": 0.9041,
+        "ce": 0.999,
+        "bm25": 0.8921,
+        "text_snippet": "Question: Where do I find the Date of Issue for UDYAM? Answer: Refer to the 'Date of UDYAM Registration' section on your UDYAM (MSME) certificate and select the matching date from the calendar in the ..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+        "score": 0.9506,
+        "faiss": 0.9089,
+        "ce": 0.9995,
+        "bm25": 0.8065,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c10",
+        "score": 0.9498,
+        "faiss": 0.8892,
+        "ce": 0.9985,
+        "bm25": 1.0,
+        "text_snippet": "Table of Contents Step 2: Supplier PAN details 2.7. Fill UDYAM (MSME) related data in the following section.  2.8.Validation rules for UDYAM (MSME) number.         2.9. Refer UDYAM (MSME) certificate ..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c11",
+        "score": 0.9223,
+        "faiss": 0.8629,
+        "ce": 0.9986,
+        "bm25": 0.8712,
+        "text_snippet": "Table of Contents Step 2: Supplier PAN details 2.9. Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field"
+      }
+    ],
+    "answer_found": true,
+    "confidence": 0.9727,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_date_of_issue",
+    "final_answer": "Refer to the 'Date of UDYAM Registration' section on your UDYAM (MSME) certificate and select the matching date from the calendar in the 'Date of Issue' field.",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+  },
+  {
+    "query": "address proof for no GST",
+    "corrected": "address proof for no GST",
+    "expanded": "address proof for no GST goods and services tax gstin",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c16",
+        "score": 0.9,
+        "faiss": 0.7925,
+        "ce": 0.8518,
+        "bm25": 0.7652,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.2. GSTIN number should belong to the respective state (From the address section). 6.3.If vendor is GST registered then user need to upload the..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_proprietor_no_gst_address_proof",
+        "score": 0.9,
+        "faiss": 0.8462,
+        "ce": 0.9941,
+        "bm25": 1.0,
+        "text_snippet": "Question: What address proof is needed for a Proprietorship/Individual without GST? Answer: For Proprietorship Firm or Individual vendors without GST registration, merge an address proof along with th..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c17",
+        "score": 0.8905,
+        "faiss": 0.8336,
+        "ce": 0.9961,
+        "bm25": 0.9641,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.5.In case of Proprietorship Firm or Individual and if vendor is not registered with GST address proof document is also to be merged along with..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_state_match",
+        "score": 0.6239,
+        "faiss": 0.8039,
+        "ce": 0.3092,
+        "bm25": 0.9917,
+        "text_snippet": "Question: Should GSTIN match the state address? Answer: Yes. The GSTIN number must belong to the respective state as per the address section."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_no_gst_declaration",
+        "score": 0.6188,
+        "faiss": 0.8146,
+        "ce": 0.4208,
+        "bm25": 0.5284,
+        "text_snippet": "Question: What if the vendor is not GST registered? Answer: If the vendor is not GST registered, upload the 'No GSTIN Declaration' form. You can download the template from the Download section on the ..."
+      }
+    ],
+    "answer_found": true,
+    "confidence": 0.9,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c16",
+    "final_answer": "GSTIN number should belong to the respective state (From the address section). 6.3.If vendor is GST registered then user need to upload the scanned copy of GSTIN certificate in the document field.",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c17",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.5.In case of Proprietorship Firm or Individual and if vendor is not registered with GST address proof document is also to be merged along with..."
+  },
+  {
+    "query": "GSTIN certificate upload",
+    "corrected": "GSTIN certificate upload",
+    "expanded": "GSTIN certificate upload goods and services tax",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gst_registered_upload",
+        "score": 0.9,
+        "faiss": 0.8518,
+        "ce": 0.6759,
+        "bm25": 1.0,
+        "text_snippet": "Question: What if the vendor is GST registered? Answer: If the vendor is GST registered, upload the scanned copy of the GSTIN certificate in the document field."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c16",
+        "score": 0.799,
+        "faiss": 0.8348,
+        "ce": 0.7607,
+        "bm25": 0.952,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.2. GSTIN number should belong to the respective state (From the address section). 6.3.If vendor is GST registered then user need to upload the..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_no_gst_declaration",
+        "score": 0.4994,
+        "faiss": 0.7927,
+        "ce": 0.1653,
+        "bm25": 0.6206,
+        "text_snippet": "Question: What if the vendor is not GST registered? Answer: If the vendor is not GST registered, upload the 'No GSTIN Declaration' form. You can download the template from the Download section on the ..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_multiple_gstin_same_state",
+        "score": 0.4518,
+        "faiss": 0.7628,
+        "ce": 0.0227,
+        "bm25": 0.9177,
+        "text_snippet": "Question: What if I have multiple GSTINs for the same state? Answer: If you have multiple GSTINs for the same state, fill the correct GSTIN number and ensure it is supported by the GSTIN copy you uplo..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c17",
+        "score": 0.4234,
+        "faiss": 0.7926,
+        "ce": 0.0991,
+        "bm25": 0.5562,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.5.In case of Proprietorship Firm or Individual and if vendor is not registered with GST address proof document is also to be merged along with..."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gst_registered_upload",
+    "final_answer": "Question: What if the vendor is GST registered? [Page 1] Answer: If the vendor is GST registered, upload the scanned copy of the GSTIN certificate in the document field. [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c16",
+    "best_kw_hits": 3,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.2. GSTIN number should belong to the respective state (From the address section). 6.3.If vendor is GST registered then user need to upload the..."
+  },
+  {
+    "query": "GSTIN state validation",
+    "corrected": "GSTIN state validation",
+    "expanded": "GSTIN state validation goods and services tax duplicate gstin validation duplicate validation rules gstin validation rules",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_state_match",
+        "score": 1.0,
+        "faiss": 0.776,
+        "ce": 0.3624,
+        "bm25": 0.9481,
+        "text_snippet": "Question: Should GSTIN match the state address? Answer: Yes. The GSTIN number must belong to the respective state as per the address section."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c15",
+        "score": 0.5735,
+        "faiss": 0.7326,
+        "ce": 0.5806,
+        "bm25": 0.9988,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.1.Basis the PAN and State code filled above, GSTIN for respective state will be fetched and plotted in the field \u201cGSTIN\u201d for checking and edit..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_autofetch",
+        "score": 0.4086,
+        "faiss": 0.7323,
+        "ce": 0.2928,
+        "bm25": 0.9586,
+        "text_snippet": "Question: How is GSTIN populated? Answer: Based on the PAN and State code you provided, the GSTIN for the respective state is automatically fetched into the GSTIN field for checking and editing if nee..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c16",
+        "score": 0.3882,
+        "faiss": 0.7201,
+        "ce": 0.2994,
+        "bm25": 0.7259,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.2. GSTIN number should belong to the respective state (From the address section). 6.3.If vendor is GST registered then user need to upload the..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_multiple_gstin_same_state",
+        "score": 0.3567,
+        "faiss": 0.7883,
+        "ce": 0.1759,
+        "bm25": 1.0,
+        "text_snippet": "Question: What if I have multiple GSTINs for the same state? Answer: If you have multiple GSTINs for the same state, fill the correct GSTIN number and ensure it is supported by the GSTIN copy you uplo..."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_state_match",
+    "final_answer": "Question: Should GSTIN match the state address? [Page 1] Answer: Yes. The GSTIN number must belong to the respective state as per the address section. [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c15",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.1.Basis the PAN and State code filled above, GSTIN for respective state will be fetched and plotted in the field \u201cGSTIN\u201d for checking and edit..."
+  },
+  {
+    "query": "more than one GSTIN same state",
+    "corrected": "more than one GSTIN same state",
+    "expanded": "more than one GSTIN same state goods and services tax",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_multiple_gstin_same_state",
+        "score": 1.0,
+        "faiss": 0.8023,
+        "ce": 0.5847,
+        "bm25": 0.9978,
+        "text_snippet": "Question: What if I have multiple GSTINs for the same state? Answer: If you have multiple GSTINs for the same state, fill the correct GSTIN number and ensure it is supported by the GSTIN copy you uplo..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c15",
+        "score": 0.648,
+        "faiss": 0.7313,
+        "ce": 0.4405,
+        "bm25": 0.9964,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.1.Basis the PAN and State code filled above, GSTIN for respective state will be fetched and plotted in the field \u201cGSTIN\u201d for checking and edit..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_state_match",
+        "score": 0.4968,
+        "faiss": 0.786,
+        "ce": 0.1514,
+        "bm25": 1.0,
+        "text_snippet": "Question: Should GSTIN match the state address? Answer: Yes. The GSTIN number must belong to the respective state as per the address section."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_autofetch",
+        "score": 0.425,
+        "faiss": 0.7062,
+        "ce": 0.0369,
+        "bm25": 0.9767,
+        "text_snippet": "Question: How is GSTIN populated? Answer: Based on the PAN and State code you provided, the GSTIN for the respective state is automatically fetched into the GSTIN field for checking and editing if nee..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c16",
+        "score": 0.3829,
+        "faiss": 0.7041,
+        "ce": 0.0326,
+        "bm25": 0.6415,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.2. GSTIN number should belong to the respective state (From the address section). 6.3.If vendor is GST registered then user need to upload the..."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_multiple_gstin_same_state",
+    "final_answer": "Question: What if I have multiple GSTINs for the same state? [Page 1] Answer: If you have multiple GSTINs for the same state, fill the correct GSTIN number and ensure it is supported by the GSTIN copy you upload. [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c15",
+    "best_kw_hits": 3,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.1.Basis the PAN and State code filled above, GSTIN for respective state will be fetched and plotted in the field \u201cGSTIN\u201d for checking and edit..."
+  },
+  {
+    "query": "technical issue contact",
+    "corrected": "technical issue contact",
+    "expanded": "technical issue contact",
+    "granularity": "factual",
+    "suggestion_triggered": true,
+    "suggestion_reason": "Query length=3 <= 3 words, has enterprise context, has problem indicator, lacks procedural intent/action verbs.",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_support_contact",
+        "score": 1.0,
+        "faiss": 0.7838,
+        "ce": 0.994,
+        "bm25": 1.0,
+        "text_snippet": "Question: Who do I contact for login or technical issues? Answer: For any login-related or technical issues, contact rrsrportal@ril.com"
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c33",
+        "score": 0.835,
+        "faiss": 0.6637,
+        "ce": 0.7613,
+        "bm25": 0.9923,
+        "text_snippet": "Additional Information  1. Once requested id is generated TAT for the approval is 24 to 48 hours. 2. Contact us for any Login related / technical issue: rrsrportal@oil.com"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_contact_person",
+        "score": 0.3036,
+        "faiss": 0.7094,
+        "ce": 0.0,
+        "bm25": 0.452,
+        "text_snippet": "Question: Whose contact details should I provide? Answer: Provide the details of your contact person. Reliance employee contact details are strictly prohibited."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c17",
+        "score": 0.2909,
+        "faiss": 0.6735,
+        "ce": 0.0,
+        "bm25": 0.371,
+        "text_snippet": "Table of Contents Step 4: Contact Details 4.1. In this section supplier needs to provide contact information detail as shown  4.2 User needs to verify the mobile number by an OTP verification, for tha..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_reliance_employee_contact",
+        "score": 0.2763,
+        "faiss": 0.6372,
+        "ce": 0.0,
+        "bm25": 0.4035,
+        "text_snippet": "Question: Can I use a Reliance employee's contact details? Answer: No. Reliance employee contact details are strictly prohibited in the registration."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "N/A",
+    "final_answer": "Did you mean:\n\n1. contact_details\n2. Step 4: Contact Details\n3. Step 7: Contact Person Details.",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c33",
+    "best_kw_hits": 3,
+    "best_kw_snippet": "Additional Information  1. Once requested id is generated TAT for the approval is 24 to 48 hours. 2. Contact us for any Login related / technical issue: rrsrportal@oil.com"
+  },
+  {
+    "query": "download bank template",
+    "corrected": "download bank template",
+    "expanded": "download bank template",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c30",
+        "score": 0.9,
+        "faiss": 0.7733,
+        "ce": 0.9935,
+        "bm25": 1.0,
+        "text_snippet": "A. Add Delivery Location Process Step 10: Bank Details 10.2. User can download the template of E-payment mandate form, from the download section (On top navigation bar of same page) of the portal or C..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_epayment_mandate_template",
+        "score": 0.9,
+        "faiss": 0.7562,
+        "ce": 0.5043,
+        "bm25": 0.9871,
+        "text_snippet": "Question: Where can I download the E-payment mandate form? Answer: You can download the E-payment mandate form template from the Download section on the top navigation bar of the portal."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_no_gst_declaration",
+        "score": 0.4656,
+        "faiss": 0.6969,
+        "ce": 0.0676,
+        "bm25": 0.8316,
+        "text_snippet": "Question: What if the vendor is not GST registered? Answer: If the vendor is not GST registered, upload the 'No GSTIN Declaration' form. You can download the template from the Download section on the ..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c16",
+        "score": 0.3935,
+        "faiss": 0.6433,
+        "ce": 0.0057,
+        "bm25": 0.5869,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.2. GSTIN number should belong to the respective state (From the address section). 6.3.If vendor is GST registered then user need to upload the..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_bank_details",
+        "score": 0.37,
+        "faiss": 0.7507,
+        "ce": 0.0003,
+        "bm25": 0.3941,
+        "text_snippet": "Question: What bank details do I need to enter? Answer: Enter: Account Number (valid bank account number), IFSC Code (valid IFSC), Bank Name (auto-fetched from IFSC), Branch Name (auto-fetched from IF..."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_epayment_mandate_template",
+    "final_answer": "Question: Where can I download the E-payment mandate form? [Page 1] Answer: You can download the E-payment mandate form template from the Download section on the top navigation bar of the portal. [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c30",
+    "best_kw_hits": 3,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 10: Bank Details 10.2. User can download the template of E-payment mandate form, from the download section (On top navigation bar of same page) of the portal or C..."
+  },
+  {
+    "query": "FSSAI verification link",
+    "corrected": "FSSAI verification link",
+    "expanded": "FSSAI verification link food safety license food safety and standards authority of india fbo active inactive status fssai active status fssai status check fssai verification",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_fssai_status_check",
+        "score": 0.9,
+        "faiss": 0.8216,
+        "ce": 0.646,
+        "bm25": 1.0,
+        "text_snippet": "Question: How can I check the Active/Inactive status of my FSSAI license? Answer: You can check the Active/Inactive status of your FSSAI license at https://foscos.fssai.gov.in/ - go to the FBO search ..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c27",
+        "score": 0.6726,
+        "faiss": 0.8243,
+        "ce": 0.7169,
+        "bm25": 0.7561,
+        "text_snippet": "A. Add Delivery Location Process Step 9: FSSAI Details. Add Delivery Location 9 | P a g e STRICTLY FOR INTERNAL CIRCULATION ONLY     You may check the Active/Inactive status of FSSAI License from the ..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_fssai_details",
+        "score": 0.3141,
+        "faiss": 0.7596,
+        "ce": 0.0075,
+        "bm25": 0.4119,
+        "text_snippet": "Question: How do I fill FSSAI details? Answer: Fill these FSSAI fields: License Type (select from available options), FSSAI Number (must be 14 numeric digits), Expiry Date (enter the certificate's exp..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_fssai_requirement",
+        "score": 0.3064,
+        "faiss": 0.806,
+        "ce": 0.008,
+        "bm25": 0.4182,
+        "text_snippet": "Question: When are FSSAI details required? Answer: The system will prompt for FSSAI details if applicable based on your selected category. You can also add multiple FSSAI license entries."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c19",
+        "score": 0.301,
+        "faiss": 0.7671,
+        "ce": 0.0103,
+        "bm25": 0.2915,
+        "text_snippet": "Table of Contents Step 5: Select Product category and Format 5.2. Once category and format selected click on Add Product category button on the right side (suppliers are allowed to choose more than on..."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_fssai_status_check",
+    "final_answer": "Question: How can I check the Active/Inactive status of my FSSAI license? [Page 1] Answer: You can check the Active/Inactive status of your FSSAI license at https://foscos.fssai.gov.in/ - go to the FBO search option, enter the FSSAI number, enter the captcha, and click Search. [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c27",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 9: FSSAI Details. Add Delivery Location 9 | P a g e STRICTLY FOR INTERNAL CIRCULATION ONLY     You may check the Active/Inactive status of FSSAI License from the ..."
+  },
+  {
+    "query": "FSSAI expiry date",
+    "corrected": "FSSAI expiry date",
+    "expanded": "FSSAI expiry date food safety license food safety and standards authority of india fbo",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_fssai_details",
+        "score": 0.835,
+        "faiss": 0.7317,
+        "ce": 0.1009,
+        "bm25": 1.0,
+        "text_snippet": "Question: How do I fill FSSAI details? Answer: Fill these FSSAI fields: License Type (select from available options), FSSAI Number (must be 14 numeric digits), Expiry Date (enter the certificate's exp..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c26",
+        "score": 0.3821,
+        "faiss": 0.7449,
+        "ce": 0.094,
+        "bm25": 0.9609,
+        "text_snippet": "A. Add Delivery Location Process Step 9: FSSAI Details. 9.1. Fill FSSAI related data in the following section. 9.2. Validation rules are FFSAI License Type Select license type from the available optio..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_fssai_status_check",
+        "score": 0.3684,
+        "faiss": 0.7337,
+        "ce": 0.0101,
+        "bm25": 0.7234,
+        "text_snippet": "Question: How can I check the Active/Inactive status of my FSSAI license? Answer: You can check the Active/Inactive status of your FSSAI license at https://foscos.fssai.gov.in/ - go to the FBO search ..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c27",
+        "score": 0.3265,
+        "faiss": 0.7595,
+        "ce": 0.0081,
+        "bm25": 0.5815,
+        "text_snippet": "A. Add Delivery Location Process Step 9: FSSAI Details. Add Delivery Location 9 | P a g e STRICTLY FOR INTERNAL CIRCULATION ONLY     You may check the Active/Inactive status of FSSAI License from the ..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_fssai_requirement",
+        "score": 0.3053,
+        "faiss": 0.7225,
+        "ce": 0.001,
+        "bm25": 0.4714,
+        "text_snippet": "Question: When are FSSAI details required? Answer: The system will prompt for FSSAI details if applicable based on your selected category. You can also add multiple FSSAI license entries."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_fssai_details",
+    "final_answer": "Question: How do I fill FSSAI details? [Page 1] Answer: Fill these FSSAI fields: License Type (select from available options), FSSAI Number (must be 14 numeric digits), Expiry Date (enter the certificate's expiry date), and FSSAI Document (upload scanned copy in PDF/JPG format). [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c26",
+    "best_kw_hits": 3,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 9: FSSAI Details. 9.1. Fill FSSAI related data in the following section. 9.2. Validation rules are FFSAI License Type Select license type from the available optio..."
+  },
+  {
+    "query": "FSSAI document upload",
+    "corrected": "FSSAI document upload",
+    "expanded": "FSSAI document upload food safety license food safety and standards authority of india fbo",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_fssai_details",
+        "score": 0.8484,
+        "faiss": 0.7686,
+        "ce": 0.1534,
+        "bm25": 0.9254,
+        "text_snippet": "Question: How do I fill FSSAI details? Answer: Fill these FSSAI fields: License Type (select from available options), FSSAI Number (must be 14 numeric digits), Expiry Date (enter the certificate's exp..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c26",
+        "score": 0.5091,
+        "faiss": 0.7697,
+        "ce": 0.2185,
+        "bm25": 0.9155,
+        "text_snippet": "A. Add Delivery Location Process Step 9: FSSAI Details. 9.1. Fill FSSAI related data in the following section. 9.2. Validation rules are FFSAI License Type Select license type from the available optio..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_fssai_status_check",
+        "score": 0.469,
+        "faiss": 0.7385,
+        "ce": 0.0239,
+        "bm25": 1.0,
+        "text_snippet": "Question: How can I check the Active/Inactive status of my FSSAI license? Answer: You can check the Active/Inactive status of your FSSAI license at https://foscos.fssai.gov.in/ - go to the FBO search ..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c27",
+        "score": 0.4527,
+        "faiss": 0.8131,
+        "ce": 0.0436,
+        "bm25": 0.8039,
+        "text_snippet": "A. Add Delivery Location Process Step 9: FSSAI Details. Add Delivery Location 9 | P a g e STRICTLY FOR INTERNAL CIRCULATION ONLY     You may check the Active/Inactive status of FSSAI License from the ..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c19",
+        "score": 0.403,
+        "faiss": 0.7884,
+        "ce": 0.0255,
+        "bm25": 0.4578,
+        "text_snippet": "Table of Contents Step 5: Select Product category and Format 5.2. Once category and format selected click on Add Product category button on the right side (suppliers are allowed to choose more than on..."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_fssai_details",
+    "final_answer": "Question: How do I fill FSSAI details? [Page 1] Answer: Fill these FSSAI fields: License Type (select from available options), FSSAI Number (must be 14 numeric digits), Expiry Date (enter the certificate's expiry date), and FSSAI Document (upload scanned copy in PDF/JPG format). [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c26",
+    "best_kw_hits": 3,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 9: FSSAI Details. 9.1. Fill FSSAI related data in the following section. 9.2. Validation rules are FFSAI License Type Select license type from the available optio..."
+  },
+  {
+    "query": "UDYAM file type",
+    "corrected": "UDYAM file type",
+    "expanded": "UDYAM file type msme udyam registration",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+        "score": 0.9929,
+        "faiss": 0.8291,
+        "ce": 0.9982,
+        "bm25": 0.9351,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_format",
+        "score": 0.9813,
+        "faiss": 0.8611,
+        "ce": 0.9885,
+        "bm25": 0.71,
+        "text_snippet": "Question: What is the UDYAM (MSME) number format? Answer: Format: UDYAM-XX-XX-XXXXXXX. The document states it should be 16 characters; first 5 are 'UDYAM', next 2 are alphabetic letters (A-Z), next 2 ..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_date_of_issue",
+        "score": 0.9752,
+        "faiss": 0.8101,
+        "ce": 0.9778,
+        "bm25": 0.8784,
+        "text_snippet": "Question: What date do I enter in the UDYAM Date of Issue field? Answer: Refer to the 'Date of UDYAM Registration' section on your UDYAM (MSME) certificate and select the matching date from the calend..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c10",
+        "score": 0.9616,
+        "faiss": 0.7987,
+        "ce": 0.9921,
+        "bm25": 1.0,
+        "text_snippet": "Table of Contents Step 2: Supplier PAN details 2.7. Fill UDYAM (MSME) related data in the following section.  2.8.Validation rules for UDYAM (MSME) number.         2.9. Refer UDYAM (MSME) certificate ..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_udyam_date_of_issue",
+        "score": 0.9595,
+        "faiss": 0.8107,
+        "ce": 0.9803,
+        "bm25": 0.8921,
+        "text_snippet": "Question: Where do I find the Date of Issue for UDYAM? Answer: Refer to the 'Date of UDYAM Registration' section on your UDYAM (MSME) certificate and select the matching date from the calendar in the ..."
+      }
+    ],
+    "answer_found": true,
+    "confidence": 0.9929,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+    "final_answer": "Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field 8.4.Validity Year - refer latest classification date in Enterprise Type of UDYAM certificate and add correct year from the calendar in \u201cFrom\u201d field\u201d. In \u201cto\u201d field mention as \u201c9999\u201d.\n\n8.3.Refer UDYAM (M",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c10",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 5: PAN Details 5.4. In \u201cNSDL PAN Name\u201d field, type the name on the PAN card as maintained in NSDL. Attach the PAN Document \u2013 Upload the scanned copy/E-Pan File of..."
+  },
+  {
+    "query": "UDYAM verification link",
+    "corrected": "UDYAM verification link",
+    "expanded": "UDYAM verification link msme udyam registration",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+        "score": 0.9683,
+        "faiss": 0.8499,
+        "ce": 0.9969,
+        "bm25": 0.9718,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_date_of_issue",
+        "score": 0.9509,
+        "faiss": 0.8247,
+        "ce": 0.9843,
+        "bm25": 0.8784,
+        "text_snippet": "Question: What date do I enter in the UDYAM Date of Issue field? Answer: Refer to the 'Date of UDYAM Registration' section on your UDYAM (MSME) certificate and select the matching date from the calend..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c10",
+        "score": 0.9365,
+        "faiss": 0.8222,
+        "ce": 0.9955,
+        "bm25": 1.0,
+        "text_snippet": "Table of Contents Step 2: Supplier PAN details 2.7. Fill UDYAM (MSME) related data in the following section.  2.8.Validation rules for UDYAM (MSME) number.         2.9. Refer UDYAM (MSME) certificate ..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_udyam_date_of_issue",
+        "score": 0.9352,
+        "faiss": 0.8294,
+        "ce": 0.9861,
+        "bm25": 0.8921,
+        "text_snippet": "Question: Where do I find the Date of Issue for UDYAM? Answer: Refer to the 'Date of UDYAM Registration' section on your UDYAM (MSME) certificate and select the matching date from the calendar in the ..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c22",
+        "score": 0.9248,
+        "faiss": 0.8309,
+        "ce": 0.9737,
+        "bm25": 0.7152,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.2. Validation rules for UDYAM (MSME) number. Should be 16 characters long Format to input as \u201cUDYAM-XX-XX-XXXXXXX\u201d Initial 5 characters should ..."
+      }
+    ],
+    "answer_found": true,
+    "confidence": 0.9683,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+    "final_answer": "In \u201cto\u201d field mention as \u201c9999\u201d. You may check the current status of UDYAM number from the portal through below menu option in following link\n\n8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field 8.4.Validity Year - refer latest classification date in Enterprise Type of UDYAM certificate and add correct ye",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+  },
+  {
+    "query": "MSME validity period",
+    "corrected": "MSME validity period",
+    "expanded": "MSME validity period small business registration micro small medium enterprise udyam udyam validation rules udyam number format udyam verification udyam validity",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c10",
+        "score": 0.9568,
+        "faiss": 0.8469,
+        "ce": 0.9463,
+        "bm25": 1.0,
+        "text_snippet": "Table of Contents Step 2: Supplier PAN details 2.7. Fill UDYAM (MSME) related data in the following section.  2.8.Validation rules for UDYAM (MSME) number.         2.9. Refer UDYAM (MSME) certificate ..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c22",
+        "score": 0.9366,
+        "faiss": 0.8231,
+        "ce": 0.8985,
+        "bm25": 0.8515,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.2. Validation rules for UDYAM (MSME) number. Should be 16 characters long Format to input as \u201cUDYAM-XX-XX-XXXXXXX\u201d Initial 5 characters should ..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_udyam_validity_year",
+        "score": 0.9,
+        "faiss": 0.8187,
+        "ce": 0.4707,
+        "bm25": 0.906,
+        "text_snippet": "Question: How do I fill the UDYAM Validity Year fields? Answer: In the 'From' field, enter the latest classification date from the Enterprise Type section of your UDYAM certificate. In the 'To' field,..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+        "score": 0.8874,
+        "faiss": 0.8438,
+        "ce": 0.9667,
+        "bm25": 0.9347,
+        "text_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_udyam_validity_year",
+        "score": 0.8455,
+        "faiss": 0.815,
+        "ce": 0.2028,
+        "bm25": 0.741,
+        "text_snippet": "Question: What should I enter in the Validity Year From and To fields? Answer: In the 'From' field, enter the latest classification date from the Enterprise Type section of your UDYAM certificate. In ..."
+      }
+    ],
+    "answer_found": true,
+    "confidence": 0.9568,
+    "top_chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c10",
+    "final_answer": "Table of Contents Fill UDYAM (MSME) related data in the following section. 2.8.Validation rules for UDYAM (MSME) number.\n\n2.8.Validation rules for UDYAM (MSME) number. 2.9.",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c23",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 8: MSME Details. 8.3.Refer UDYAM (MSME) certificate \u201cDate of UDYAM registration\u201d section and select correct date from the calendar option in \u201cDate of issue\u201d field..."
+  },
+  {
+    "query": "contact details rules",
+    "corrected": "contact details rules",
+    "expanded": "contact details rules",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_contact_person",
+        "score": 0.9,
+        "faiss": 0.7478,
+        "ce": 0.4903,
+        "bm25": 1.0,
+        "text_snippet": "Question: Whose contact details should I provide? Answer: Provide the details of your contact person. Reliance employee contact details are strictly prohibited."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c19",
+        "score": 0.7445,
+        "faiss": 0.7276,
+        "ce": 0.7316,
+        "bm25": 0.9438,
+        "text_snippet": "A. Add Delivery Location Process Step 7: Contact Person Details. 7.1. User need to fill the details of contact person in this section. Reliance employee\u2019s contact details are prohibited"
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c17",
+        "score": 0.7373,
+        "faiss": 0.7235,
+        "ce": 0.8512,
+        "bm25": 0.7897,
+        "text_snippet": "Table of Contents Step 4: Contact Details 4.1. In this section supplier needs to provide contact information detail as shown  4.2 User needs to verify the mobile number by an OTP verification, for tha..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_reliance_employee_contact",
+        "score": 0.449,
+        "faiss": 0.7149,
+        "ce": 0.165,
+        "bm25": 0.8926,
+        "text_snippet": "Question: Can I use a Reliance employee's contact details? Answer: No. Reliance employee contact details are strictly prohibited in the registration."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_support_contact",
+        "score": 0.372,
+        "faiss": 0.655,
+        "ce": 0.0,
+        "bm25": 0.6856,
+        "text_snippet": "Question: Who do I contact for login or technical issues? Answer: For any login-related or technical issues, contact rrsrportal@ril.com"
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_contact_person",
+    "final_answer": "Question: Whose contact details should I provide? [Page 1] Answer: Provide the details of your contact person. Reliance employee contact details are strictly prohibited. [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c19",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 7: Contact Person Details. 7.1. User need to fill the details of contact person in this section. Reliance employee\u2019s contact details are prohibited"
+  },
+  {
+    "query": "multiple GSTIN scenario",
+    "corrected": "multiple GSTIN scenario",
+    "expanded": "multiple GSTIN scenario goods and services tax duplicate gstin validation duplicate validation rules gstin validation rules",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_multiple_gstin_same_state",
+        "score": 1.0,
+        "faiss": 0.7975,
+        "ce": 0.257,
+        "bm25": 1.0,
+        "text_snippet": "Question: What if I have multiple GSTINs for the same state? Answer: If you have multiple GSTINs for the same state, fill the correct GSTIN number and ensure it is supported by the GSTIN copy you uplo..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c15",
+        "score": 0.7337,
+        "faiss": 0.72,
+        "ce": 0.5327,
+        "bm25": 0.8867,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.1.Basis the PAN and State code filled above, GSTIN for respective state will be fetched and plotted in the field \u201cGSTIN\u201d for checking and edit..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_state_match",
+        "score": 0.4239,
+        "faiss": 0.7471,
+        "ce": 0.0269,
+        "bm25": 0.6717,
+        "text_snippet": "Question: Should GSTIN match the state address? Answer: Yes. The GSTIN number must belong to the respective state as per the address section."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c16",
+        "score": 0.4195,
+        "faiss": 0.7082,
+        "ce": 0.0352,
+        "bm25": 0.6013,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.2. GSTIN number should belong to the respective state (From the address section). 6.3.If vendor is GST registered then user need to upload the..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_autofetch",
+        "score": 0.4191,
+        "faiss": 0.6984,
+        "ce": 0.0312,
+        "bm25": 0.7033,
+        "text_snippet": "Question: How is GSTIN populated? Answer: Based on the PAN and State code you provided, the GSTIN for the respective state is automatically fetched into the GSTIN field for checking and editing if nee..."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_multiple_gstin_same_state",
+    "final_answer": "Question: What if I have multiple GSTINs for the same state? [Page 1] Answer: If you have multiple GSTINs for the same state, fill the correct GSTIN number and ensure it is supported by the GSTIN copy you upload. [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c15",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.1.Basis the PAN and State code filled above, GSTIN for respective state will be fetched and plotted in the field \u201cGSTIN\u201d for checking and edit..."
+  },
+  {
+    "query": "GSTIN editing",
+    "corrected": "GSTIN editing",
+    "expanded": "GSTIN editing goods and services tax",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_autofetch",
+        "score": 0.9,
+        "faiss": 0.7676,
+        "ce": 0.2804,
+        "bm25": 1.0,
+        "text_snippet": "Question: How is GSTIN populated? Answer: Based on the PAN and State code you provided, the GSTIN for the respective state is automatically fetched into the GSTIN field for checking and editing if nee..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c15",
+        "score": 0.5392,
+        "faiss": 0.7504,
+        "ce": 0.2688,
+        "bm25": 0.9067,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.1.Basis the PAN and State code filled above, GSTIN for respective state will be fetched and plotted in the field \u201cGSTIN\u201d for checking and edit..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_multiple_gstin_same_state",
+        "score": 0.3868,
+        "faiss": 0.7402,
+        "ce": 0.0003,
+        "bm25": 0.534,
+        "text_snippet": "Question: What if I have multiple GSTINs for the same state? Answer: If you have multiple GSTINs for the same state, fill the correct GSTIN number and ensure it is supported by the GSTIN copy you uplo..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c16",
+        "score": 0.3857,
+        "faiss": 0.7444,
+        "ce": 0.0022,
+        "bm25": 0.429,
+        "text_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.2. GSTIN number should belong to the respective state (From the address section). 6.3.If vendor is GST registered then user need to upload the..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_state_match",
+        "score": 0.3799,
+        "faiss": 0.7286,
+        "ce": 0.0014,
+        "bm25": 0.4793,
+        "text_snippet": "Question: Should GSTIN match the state address? Answer: Yes. The GSTIN number must belong to the respective state as per the address section."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_gstin_autofetch",
+    "final_answer": "Question: How is GSTIN populated? [Page 1] Answer: Based on the PAN and State code you provided, the GSTIN for the respective state is automatically fetched into the GSTIN field for checking and editing if needed. [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c15",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 6: GSTIN Details. 6.1.Basis the PAN and State code filled above, GSTIN for respective state will be fetched and plotted in the field \u201cGSTIN\u201d for checking and edit..."
+  },
+  {
+    "query": "PAN name Y flag",
+    "corrected": "PAN name Y flag",
+    "expanded": "PAN name Y flag permanent account number",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_nsdl_pan_name",
+        "score": 1.0,
+        "faiss": 0.7597,
+        "ce": 0.6824,
+        "bm25": 0.9435,
+        "text_snippet": "Question: What should I enter in the NSDL PAN Name field? Answer: Type the name on your PAN card exactly as maintained in NSDL. Ensure the 'Y' flag is displayed in the PAN name validation."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_faq_declare_pan_name",
+        "score": 0.9776,
+        "faiss": 0.8063,
+        "ce": 0.5553,
+        "bm25": 1.0,
+        "text_snippet": "Question: How should I declare my PAN name? Answer: Declare the PAN name exactly as per your PAN card. Ensure the 'Y' flag is displayed in the PAN name validation."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c10",
+        "score": 0.8129,
+        "faiss": 0.6979,
+        "ce": 0.7014,
+        "bm25": 0.8036,
+        "text_snippet": "A. Add Delivery Location Process Step 5: PAN Details 5.4. In \u201cNSDL PAN Name\u201d field, type the name on the PAN card as maintained in NSDL. Attach the PAN Document \u2013 Upload the scanned copy/E-Pan File of..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c4",
+        "score": 0.6768,
+        "faiss": 0.7212,
+        "ce": 0.5396,
+        "bm25": 0.5838,
+        "text_snippet": "Table of Contents Step 2: Supplier PAN details C - stands for Company P - stands for Individual H - stands for Hindu Undivided Family (HUF) F - stands for Firm or Limited Liability Partnership A - sta..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c12",
+        "score": 0.3753,
+        "faiss": 0.7089,
+        "ce": 0.0069,
+        "bm25": 0.4605,
+        "text_snippet": "A. Add Delivery Location Process Step 5: PAN Details 5.5. Proof of Proprietorship \u2013 In case of Proprietorship Firm, wherein 4th Character of PAN is \u201cP\u201d, and Vendor name/Bank account name is not the Pr..."
+      }
+    ],
+    "answer_found": false,
+    "confidence": 0.0,
+    "top_chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_nsdl_pan_name",
+    "final_answer": "Question: What should I enter in the NSDL PAN Name field? [Page 1] Answer: Type the name on your PAN card exactly as maintained in NSDL. Ensure the 'Y' flag is displayed in the PAN name validation. [Page 1]",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c10",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 5: PAN Details 5.4. In \u201cNSDL PAN Name\u201d field, type the name on the PAN card as maintained in NSDL. Attach the PAN Document \u2013 Upload the scanned copy/E-Pan File of..."
+  },
+  {
+    "query": "vendor category selection",
+    "corrected": "vendor category selection",
+    "expanded": "vendor category selection",
+    "granularity": "factual",
+    "suggestion_triggered": false,
+    "suggestion_reason": "",
+    "top_candidates": [
+      {
+        "rank": 1,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c20",
+        "score": 0.9256,
+        "faiss": 0.6924,
+        "ce": 0.9895,
+        "bm25": 0.4976,
+        "text_snippet": "Table of Contents Step 5: Select Product category and Format New Merchandise Vendor Registration on Supplier Registration Portal _______________________________________________________________________..."
+      },
+      {
+        "rank": 2,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_faq_product_category_selection",
+        "score": 0.9,
+        "faiss": 0.7952,
+        "ce": 0.9965,
+        "bm25": 0.5878,
+        "text_snippet": "Question: How do I select Product Category and Store Format? Answer: From the drop-down, choose the vendor category under which you are registered. Then choose the appropriate Store Format (also under..."
+      },
+      {
+        "rank": 3,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c18",
+        "score": 0.8763,
+        "faiss": 0.7014,
+        "ce": 0.8951,
+        "bm25": 0.4628,
+        "text_snippet": "Table of Contents Step 5: Select Product category and Format 5.1. Select the appropriate category and format in this section. Seek guidance from Reliance Buyer with whom you are coordinating to choose..."
+      },
+      {
+        "rank": 4,
+        "chunk_id": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c6",
+        "score": 0.8442,
+        "faiss": 0.8168,
+        "ce": 0.9987,
+        "bm25": 0.6505,
+        "text_snippet": "A. Add Delivery Location Process Step 4: Selecting Product Category 4.1. Below screenshot shows the available vendor categories (Under which user is registered) in the drop-down menu. 4.2. Choose appr..."
+      },
+      {
+        "rank": 5,
+        "chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c19",
+        "score": 0.7585,
+        "faiss": 0.709,
+        "ce": 0.6862,
+        "bm25": 0.4371,
+        "text_snippet": "Table of Contents Step 5: Select Product category and Format 5.2. Once category and format selected click on Add Product category button on the right side (suppliers are allowed to choose more than on..."
+      }
+    ],
+    "answer_found": true,
+    "confidence": 0.9256,
+    "top_chunk_id": "3953124eac5f11b709b4d0a6e920c14f97f925e38323d78625a3d4dd97c3e16b_c20",
+    "final_answer": "Check the \u201cI confirm\u2026..\u201d button and click on next.\n\nTable of Contents Step 5: Select Product category and Format New Merchandise Vendor Registration on Supplier Registration Portal __________________________________________________________________________________\n\n__________________________________________________________________________________ Page 7 of 8\n\n5.4.",
+    "best_kw_chunk": "3b97da58a590c41e2833e6360925ec9dc0349b82e177e1dadba8fbd85a089d57_c6",
+    "best_kw_hits": 2,
+    "best_kw_snippet": "A. Add Delivery Location Process Step 4: Selecting Product Category 4.1. Below screenshot shows the available vendor categories (Under which user is registered) in the drop-down menu. 4.2. Choose appr..."
+  }
+]

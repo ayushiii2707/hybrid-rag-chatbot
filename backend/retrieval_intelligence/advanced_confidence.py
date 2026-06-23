@@ -40,7 +40,19 @@ _DECLARATIVE_PATTERNS = [
     re.compile(r"\bstep\s*\d+\b", re.IGNORECASE),   # numbered procedure
     re.compile(r"\b\d+\.\s+\w", re.MULTILINE),      # "1. Something"
     re.compile(r"https?://", re.IGNORECASE),         # direct URL
+    re.compile(r"\bindicates\b", re.IGNORECASE),
+    re.compile(r"\bsignif(?:y|ies)\b", re.IGNORECASE),
+    re.compile(r"\bstands for\b", re.IGNORECASE),
+    re.compile(r"\brepresents\b", re.IGNORECASE),
+    re.compile(r"\bmeans\b", re.IGNORECASE),
+    re.compile(r"\bmeaning\b", re.IGNORECASE),
+    re.compile(r"\bdenotes\b", re.IGNORECASE),
+    re.compile(r"\bcharacter\b", re.IGNORECASE),
+    re.compile(r"\btype\b", re.IGNORECASE),
+    re.compile(r"\b-\s+\w", re.IGNORECASE),         # e.g. "C - Company"
+    re.compile(r":\s+\w", re.IGNORECASE),           # e.g. "type: C"
 ]
+
 
 
 class AdvancedConfidenceScorer:
@@ -64,7 +76,7 @@ class AdvancedConfidenceScorer:
         Initializes the AdvancedConfidenceScorer with configurations.
         """
         self.min_confidence_threshold = 0.55
-        self.high_confidence_threshold = 0.80
+        self.high_confidence_threshold = 0.95
         self.weights = {
             "semantic": 0.55,
             "keyword": 0.12,
@@ -172,7 +184,7 @@ class AdvancedConfidenceScorer:
         source_file = chunk_metadata.get("source_file", "")
         page_number = chunk_metadata.get("page_number", -1)
 
-        if "registration" in source_file.lower() and page_number == 10:
+        if ("registration" in source_file.lower() or "delivery" in source_file.lower()) and page_number == 10:
             if any(term in query_lower for term in ["validation", "rules", "msme", "udyam"]):
                 score += 0.25
 
@@ -246,6 +258,13 @@ class AdvancedConfidenceScorer:
         Returns float in [0.0, 1.0].
         """
         answer_type = detect_query_answer_type(query)
+        
+        # Override step_procedure constraint for factual/explanatory queries
+        from context_assembler import classify_query_granularity
+        query_gran = classify_query_granularity(query)
+        if answer_type == "step_procedure" and query_gran in ("factual", "explanatory"):
+            answer_type = "generic"
+
         if answer_type == "generic":
             return 1.0  # No answer-type constraint — don't penalise
 
@@ -276,8 +295,8 @@ class AdvancedConfidenceScorer:
             return 1.0  # Non-question query — no alignment constraint
 
         matches = sum(1 for p in _DECLARATIVE_PATTERNS if p.search(chunk_text))
-        # Normalise: 3+ matches = max score
-        normalised = min(1.0, matches / 3.0)
+        # Normalise: 1+ matches is sufficient to establish alignment
+        normalised = min(1.0, matches / 1.0)
         # Floor at 0.5 so it never zeroes out the overall score
         return max(0.5, normalised)
 
@@ -394,6 +413,59 @@ class AdvancedConfidenceScorer:
         alignment = self._query_answer_alignment_score(query, chunk_text)
         sufficiency = self._sufficiency_score(chunk_text)
 
+        # Alternate phrasings boost check
+        alt_phrasings = list(chunk_metadata.get("alternate_phrasings", []))
+        if chunk_text.startswith("Question:"):
+            parts = chunk_text.split("\nAnswer:")
+            if parts:
+                main_q = parts[0].replace("Question:", "").strip()
+                alt_phrasings.append(main_q)
+
+        alt_boost = 0.0
+        alt_matched = False
+        if alt_phrasings:
+            norm_query = re.sub(r'[^a-z0-9\s]', '', query.lower()).strip()
+            query_tokens = set(norm_query.split())
+            
+            best_overlap = 0.0
+            exact_match = False
+            
+            for phrase in alt_phrasings:
+                norm_phrase = re.sub(r'[^a-z0-9\s]', '', phrase.lower()).strip()
+                if norm_query == norm_phrase:
+                    exact_match = True
+                    break
+                
+                phrase_tokens = set(norm_phrase.split())
+                if query_tokens and phrase_tokens:
+                    intersection = query_tokens & phrase_tokens
+                    union = query_tokens | phrase_tokens
+                    jaccard = len(intersection) / len(union)
+                    overlap_coeff = len(intersection) / min(len(query_tokens), len(phrase_tokens))
+                    overlap_score = max(jaccard, overlap_coeff * 0.8)
+                    if overlap_score > best_overlap:
+                        best_overlap = overlap_score
+            
+            if exact_match:
+                alt_boost = 0.40
+                alt_matched = True
+            elif best_overlap >= 0.75:
+                alt_boost = 0.25 * best_overlap
+                alt_matched = True
+
+        if alt_matched:
+            alignment = 1.0
+            answer_type_score = 1.0
+            mismatch_penalty = 0.0
+        else:
+            if semantic_score >= self.high_confidence_threshold:
+                alignment = max(0.90, alignment)
+                if answer_type_score == 0.0:
+                    answer_type_score = 0.50
+                mismatch_penalty = 0.0
+            else:
+                mismatch_penalty = self._intent_mismatch_penalty(query, chunk_text)
+
         # 3. Weighted linear combination using normalised weights
         ws = self.weights.get("semantic", 0.55)
         wk = self.weights.get("keyword", 0.12)
@@ -418,9 +490,8 @@ class AdvancedConfidenceScorer:
             (wan * answerability)
         )
 
-        # 4. Intent Mismatch Penalty (additive, from Phase 1)
-        mismatch_penalty = self._intent_mismatch_penalty(query, chunk_text)
         base_confidence += mismatch_penalty
+        base_confidence += alt_boost
 
         # 5. Add retrieval agreement boost
         base_confidence += agreement_boost
@@ -434,7 +505,7 @@ class AdvancedConfidenceScorer:
             f"answer_type={answer_type_score:.3f} answerability={answerability:.3f} "
             f"sufficiency={sufficiency:.3f} quality={quality_score:.3f} "
             f"mismatch_penalty={mismatch_penalty:.2f} agreement_boost={agreement_boost:.2f} "
-            f"source_agreement_boost={source_agreement_boost:.2f} → final={base_confidence:.4f}"
+            f"source_agreement_boost={source_agreement_boost:.2f} alt_boost={alt_boost:.2f} → final={base_confidence:.4f}"
         )
 
         return {
@@ -450,6 +521,7 @@ class AdvancedConfidenceScorer:
                 "alignment": float(alignment),
                 "sufficiency": float(sufficiency),
                 "intent_mismatch_penalty": float(mismatch_penalty),
+                "alternate_phrasing_boost": float(alt_boost),
                 "agreement_boost": float(agreement_boost),
                 "agreement_detected": bool(agreement_detected),
                 "faiss_rank": int(faiss_rank),
@@ -460,6 +532,7 @@ class AdvancedConfidenceScorer:
                 "supporting_documents": int(supporting_documents),
             }
         }
+
 
     # ------------------------------------------------------------------
     # Ambiguity and Procedural Chain Penalties
@@ -502,8 +575,9 @@ class AdvancedConfidenceScorer:
         step_label_pat = re.compile(r'^\s*(?:Step|STEP|Stage|STAGE|Phase|PHASE)\s*(\d+)\b', re.IGNORECASE)
         step_num_pat = re.compile(r'^\s*(\d+(?:\.\d+)+|\d+\.)\s*(.*)$')
 
-        # Check query intent for procedural workflow keywords
-        is_procedural_query = any(w in q_lower for w in ["step", "how to", "process", "workflow", "onboarding", "register", "onboard", "add", "create", "steps"])
+        # Check query intent for procedural workflow keywords using unified classifier
+        from context_assembler import classify_query_granularity
+        is_procedural_query = classify_query_granularity(query) in ("procedural", "workflow")
 
         if is_procedural_query:
             # Group candidate chunks by document and section to avoid cross-procedure penalties

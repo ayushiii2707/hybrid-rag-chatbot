@@ -1,5 +1,6 @@
 {
   "min_confidence_threshold": 0.55,
   "retrieval_top_k": 5,
-  "sentence_split_regex": "(?<=[.!?])\\s+"
+  "sentence_split_regex": "(?<=[.!?])\\s+",
+  "debug_mode": true
 }

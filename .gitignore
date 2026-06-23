@@ -25,3 +25,8 @@ backend/logs/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Environment variables
+.env
+.env.*
+!.env.example

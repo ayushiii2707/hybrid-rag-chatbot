@@ -54,3 +54,68 @@ class QueryLog(Base):
         Index("idx_query_logs_user_timestamp", "user_id", "timestamp"),
         Index("idx_query_logs_risk_blocked", "risk_level", "blocked"),
     )
+
+
+class Conversation(Base):
+    """
+    Persistent conversation session linked to a user.
+    Supports soft-delete so records are retained for audit.
+    """
+    __tablename__ = "conversations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    title = Column(String, nullable=False, default="New Chat")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    is_deleted = Column(Boolean, default=False, nullable=False)
+
+    __table_args__ = (
+        # Fast sidebar query: fetch all active convs for a user sorted by recency
+        Index("idx_conversations_user_active_updated", "user_id", "is_deleted", "updated_at"),
+    )
+
+
+class Message(Base):
+    """
+    Individual chat message belonging to a Conversation.
+    Role is either 'user' or 'assistant'.
+    """
+    __tablename__ = "messages"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role = Column(String, nullable=False)   # 'user' | 'assistant'
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        # Ordered message retrieval for a conversation
+        Index("idx_messages_conversation_created", "conversation_id", "created_at"),
+    )
+
+
+class EmailOTP(Base):
+    """
+    Model representing email OTP verification codes.
+    Stores the bcrypt hash of the OTP for security.
+    """
+    __tablename__ = "email_otps"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, nullable=False, index=True)
+    otp_hash = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    verified = Column(Boolean, default=False, nullable=False)
+    attempts = Column(Integer, default=0, nullable=False)

@@ -20,7 +20,7 @@ STOPWORDS: Set[str] = {
 }
 
 ENTERPRISE_TERMS: Set[str] = {
-    "msme", "udyam", "fssai", "gst", "foscos", "onboarding", "in-house"
+    "msme", "udyam", "fssai", "gst", "gstin", "pan", "ifsc", "micr", "rtgs", "foscos", "onboarding", "in-house"
 }
 
 class KeywordRanker:

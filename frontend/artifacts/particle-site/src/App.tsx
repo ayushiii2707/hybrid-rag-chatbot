@@ -9,10 +9,27 @@ import ThemeToggle, { type ThemeMode } from "./components/ThemeToggle";
 
 const TOTAL_HEIGHT = 180;
 
+function parseJwt(token: string) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window.atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
 export default function App() {
   const scrollRef = useRef(0);
   const [scroll, setScroll] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
   const [theme, setTheme] = useState<ThemeMode>('light');
 
   const onScroll = useCallback(() => {
@@ -27,6 +44,22 @@ export default function App() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [onScroll]);
+
+  // Session recovery on startup
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      const payload = parseJwt(token);
+      if (payload && payload.exp * 1000 > Date.now()) {
+        setUserEmail(payload.email || '');
+        setIsLoggedIn(true);
+      } else {
+        localStorage.removeItem('access_token');
+        setIsLoggedIn(false);
+        setUserEmail('');
+      }
+    }
+  }, []);
 
   const [typewriterDone, setTypewriterDone] = useState(false);
 
@@ -51,7 +84,17 @@ export default function App() {
   }, [typewriterDone]);
 
   if (isLoggedIn) {
-    return <RelatusDashboard onLogout={() => setIsLoggedIn(false)} theme={theme} />;
+    return (
+      <RelatusDashboard
+        onLogout={() => {
+          localStorage.removeItem('access_token');
+          setIsLoggedIn(false);
+          setUserEmail('');
+        }}
+        theme={theme}
+        userEmail={userEmail}
+      />
+    );
   }
 
   return (
@@ -123,10 +166,18 @@ export default function App() {
         />
       </div>
 
-      {/* Content sections — all position:fixed, toggled by scroll */}
       <Section2 
         scroll={scroll} 
-        onLoginSuccess={() => setIsLoggedIn(true)} 
+        onLoginSuccess={() => {
+          const token = localStorage.getItem('access_token');
+          if (token) {
+            const payload = parseJwt(token);
+            if (payload && payload.email) {
+              setUserEmail(payload.email);
+            }
+          }
+          setIsLoggedIn(true);
+        }} 
         theme={theme} 
         onTypewriterComplete={setTypewriterDone}
       />
