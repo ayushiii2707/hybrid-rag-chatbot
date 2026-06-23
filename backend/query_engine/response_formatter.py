@@ -311,10 +311,7 @@ class ResponseFormatter:
         if completeness_warning:
             synthesized_text += f"\n\nWARNING: {completeness_warning}"
 
-        # Satisfy test suite's verbatim groundedness checks
-        orig_excerpt = top_match.get("answer_excerpt", "").strip()
-        if orig_excerpt:
-            synthesized_text += f"\n\nVerbatim Source Quote.\n{orig_excerpt}"
+
 
         # 3. Format outputs
         formatted["completeness_score"] = completeness_score

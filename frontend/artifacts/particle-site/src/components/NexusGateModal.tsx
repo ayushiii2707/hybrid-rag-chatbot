@@ -74,8 +74,11 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
   const [isOtpVerifying, setIsOtpVerifying] = useState(false);
   const [otpSuccess, setOtpSuccess] = useState(false);
   const [showOtpCard, setShowOtpCard] = useState(false);
-  const [otpCode, setOtpCode] = useState(['', '', '', '']);
-  const [timer, setTimer] = useState(49);
+  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
+  const [timer, setTimer] = useState(60);
+  const [otpError, setOtpError] = useState('');
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
   const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
   const [confirmPassFocused, setConfirmPassFocused] = useState(false);
@@ -139,8 +142,8 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
       setIsOtpVerified(false);
       setIsOtpVerifying(false);
       setOtpSuccess(false);
-      setOtpCode(['', '', '', '']);
-      setTimer(49);
+      setOtpCode(['', '', '', '', '', '']);
+      setTimer(60);
       setSignupConfirmPassword('');
       setShowSignupConfirmPassword(false);
       setConfirmPassFocused(false);
@@ -258,6 +261,22 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
         setAuthLoading(false);
         return;
       }
+      
+      // Auto-authenticate after registration
+      const loginRes = await fetch(`${BACKEND_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: signupEmail, password: signupPassword }),
+      });
+      const loginData = await loginRes.json();
+      if (loginRes.ok && loginData.access_token) {
+        localStorage.setItem('access_token', loginData.access_token);
+      } else {
+        setAuthError(loginData.detail || loginData.message || 'Registration succeeded, but auto-login failed');
+        setAuthLoading(false);
+        return;
+      }
+
       setAuthLoading(false);
       setView('welcome_screen');
     } catch {
@@ -330,7 +349,7 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
     const newOtp = [...otpCode];
     newOtp[index] = val.slice(-1);
     setOtpCode(newOtp);
-    if (val && index < 3) {
+    if (val && index < 5) {
       const nextInput = document.getElementById(`otp-input-${index + 1}`);
       if (nextInput) (nextInput as HTMLInputElement).focus();
     }
@@ -348,13 +367,53 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
     }
   };
 
+  const handleSendOtp = async () => {
+    if (!signupEmail) return;
+    setOtpError('');
+    setIsSendingOtp(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/auth/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: signupEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOtpError(data.detail || data.message || 'Failed to send OTP code');
+        setShowOtpCard(true); // Open card to show the error
+        setShowOtpPopup(false);
+        return;
+      }
+      setTimer(60);
+      setShowOtpCard(true);
+      setShowOtpPopup(false);
+      if (data && data.dev_mode === true) {
+        setDevOtp(data.dev_otp || null);
+        if (data.dev_otp) {
+          setOtpCode(data.dev_otp.split(''));
+        } else {
+          setOtpCode(['', '', '', '', '', '']);
+        }
+      } else {
+        setDevOtp(null);
+        setOtpCode(['', '', '', '', '', '']);
+      }
+    } catch {
+      setOtpError('Server unavailable. Please try again.');
+      setShowOtpCard(true);
+      setShowOtpPopup(false);
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     return `00:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
   useEffect(() => {
     if (!showOtpCard) return;
-    setTimer(49);
+    setTimer(60);
     const interval = setInterval(() => {
       setTimer((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
@@ -1463,10 +1522,8 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
           >
             <button
               type="button"
-              onClick={() => {
-                setShowOtpPopup(false);
-                setShowOtpCard(true);
-              }}
+              disabled={isSendingOtp}
+              onClick={handleSendOtp}
               style={{
                 background: '#ffffff',
                 border: '1px solid #d1d5db',
@@ -1475,7 +1532,7 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
                 fontSize: '16px',
                 fontWeight: '500',
                 padding: '12px 28px',
-                cursor: 'pointer',
+                cursor: isSendingOtp ? 'default' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1487,21 +1544,25 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
                 minWidth: '140px',
               }}
               onMouseEnter={e => {
+                if (isSendingOtp) return;
                 e.currentTarget.style.background = '#f9fafb';
                 e.currentTarget.style.borderColor = '#9ca3af';
               }}
               onMouseLeave={e => {
+                if (isSendingOtp) return;
                 e.currentTarget.style.background = '#ffffff';
                 e.currentTarget.style.borderColor = '#d1d5db';
               }}
               onMouseDown={e => {
+                if (isSendingOtp) return;
                 e.currentTarget.style.transform = 'scale(0.96)';
               }}
               onMouseUp={e => {
+                if (isSendingOtp) return;
                 e.currentTarget.style.transform = 'scale(1)';
               }}
             >
-              Verify OTP
+              {isSendingOtp ? 'Sending OTP...' : 'Verify OTP'}
             </button>
           </div>
         </>
@@ -1578,17 +1639,24 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
 
             {/* Email send text */}
             <p style={{ fontSize: '15px', color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.55)', margin: '0 0 28px 0', lineHeight: 1.5 }}>
-              Enter the 4-digit code sent to<br />
+              Enter the 6-digit code sent to<br />
               <strong style={{ color: textColor, fontWeight: 700 }}>{signupEmail || 'example@email.com'}</strong>.
             </p>
+
+            {/* Error Message */}
+            {otpError && (
+              <p style={{ color: '#ef4444', fontSize: '13.5px', margin: '-16px 0 20px 0', textAlign: 'center', fontWeight: '500' }}>
+                {otpError}
+              </p>
+            )}
 
             {/* Step label */}
             <p style={{ fontSize: '13.5px', color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)', margin: '0 0 16px 0', textAlign: 'center' }}>
               Step 1 of 1: Verify your account
             </p>
 
-            {/* 4 Square inputs */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
+            {/* 6 Square inputs */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '24px' }}>
               {otpCode.map((digit, index) => (
                 <input
                   key={index}
@@ -1600,12 +1668,12 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
                   onKeyDown={(e) => handleOtpKeyDown(index, e)}
                   style={{
                     width: '100%',
-                    height: '60px',
+                    height: '52px',
                     background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
                     border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.15)',
-                    borderRadius: '12px',
+                    borderRadius: '10px',
                     textAlign: 'center',
-                    fontSize: '22px',
+                    fontSize: '20px',
                     fontWeight: '600',
                     color: textColor,
                     outline: 'none',
@@ -1621,19 +1689,46 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
               ))}
             </div>
 
-            {/* Resend OTP description countdown */}
-            <p style={{ fontSize: '13.5px', color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)', margin: '0 0 24px 0', textAlign: 'center' }}>
-              You can resend OTP in <strong style={{ color: textColor }}>{formatTime(timer)}</strong>
-            </p>
+            {devOtp && (
+              <p style={{
+                fontSize: '13.5px',
+                color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.45)',
+                margin: '-16px 0 16px 0',
+                textAlign: 'center',
+                fontFamily: "'Inter', sans-serif"
+              }}>
+                Development OTP: {devOtp}
+              </p>
+            )}
 
-            {/* Verify OTP Button (Primary black/dark button) */}
+            {/* Verify OTP Button */}
             <button
               type="button"
-              onClick={() => {
+              disabled={isOtpVerifying || otpSuccess}
+              onClick={async () => {
                 if (isOtpVerifying || otpSuccess) return;
+                setOtpError('');
                 setIsOtpVerifying(true);
-                setTimeout(() => {
-                  setIsOtpVerifying(false);
+                try {
+                  const code = otpCode.join('');
+                  if (code.length !== 6) {
+                    setOtpError('Please enter a 6-digit code');
+                    setIsOtpVerifying(false);
+                    return;
+                  }
+
+                  const res = await fetch(`${BACKEND_URL}/auth/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: signupEmail, otp: code }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) {
+                    setOtpError(data.detail || data.message || 'OTP verification failed');
+                    setIsOtpVerifying(false);
+                    return;
+                  }
+
                   setOtpSuccess(true);
                   setTimeout(() => {
                     setIsOtpVerified(true);
@@ -1645,7 +1740,11 @@ export default function NexusGateModal({ isOpen, onClose, onSuccess, theme = 'da
                       (passInput as HTMLInputElement).focus();
                     }
                   }, 800);
-                }, 1200);
+                } catch {
+                  setOtpError('Server unavailable. Please try again.');
+                } finally {
+                  setIsOtpVerifying(false);
+                }
               }}
               style={{
                 width: '100%',

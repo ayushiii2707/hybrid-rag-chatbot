@@ -20,6 +20,8 @@ _STRUCTURAL_NOISE_PATTERNS: List[re.Pattern] = []  # populated after class def
 # Compiled inline for readability; stored in module-level list below.
 _STRUCTURAL_NOISE_RAW = [
     # ── Workflow / document title lines ──────────────────────────────────────
+    r'^\s*Add\s+Delivery\s+Location\s*$',
+    r'^\s*New\s+Merchandise\s+Vendor\s+Registration\s*$',
     r'^(?:Add\s+Delivery\s+Location\s+(?:Process|User\s+Manual))',
     r'^(?:User\s+Manual\s+(?:for|of)\b)',
     r'^(?:Supplier\s+Registration\s+Portal)',
@@ -70,13 +72,10 @@ _WORKFLOW_KEYWORDS = [
     "end-to-end", "end to end", "full process", "full workflow",
 ]
 _PROCEDURAL_KEYWORDS = [
-    "what are the steps", "list the steps", "steps to", "steps for",
-    "how do i", "how to", "process for", "process to",
-    "procedure for", "procedure to", "walk me through",
-    "guide me", "guide to", "workflow for", "workflow to",
-    "how can i", "how should i register", "how should i add",
-    "how should i create", "how should i submit",
-    "registration process", "onboarding steps",
+    "how to", "steps to", "procedure for", "walkthrough", "guide me", 
+    "instructions", "process steps", "step by step", "step-by-step",
+    "what are the steps", "list the steps", "steps for", "how do i", 
+    "how can i", "walk me through"
 ]
 _EXPLANATORY_KEYWORDS = [
     "what is", "what are", "define ", "explain ", "describe ",
@@ -112,9 +111,6 @@ def classify_query_granularity(query: str) -> str:
 
     for kw in _PROCEDURAL_KEYWORDS:
         if kw in q:
-            # Bypass procedural classification for generic process terms if query seeks overview/purpose (explanatory intent)
-            if kw in ("process for", "registration process") and any(ew in q for ew in _EXPLANATORY_KEYWORDS) and "step" not in q:
-                continue
             logger.info(f"Query granularity: procedural (matched '{kw}')")
             return "procedural"
 
@@ -303,6 +299,18 @@ class ContextAssembler:
             or top_chunk.get("source_file", "")
         )
 
+        is_faq = (
+            "answer:" in text.lower() or
+            "question:" in text.lower() or
+            "_faq_" in top_chunk.get("chunk_id", "")
+        )
+        if is_faq:
+            return {
+                "minimal_answer": text.strip(),
+                "page_number": page_num,
+                "source_file": source_file,
+            }
+
         # Stopwords to ignore during overlap scoring
         _STOP = {
             "the", "a", "an", "and", "or", "but", "is", "are", "was", "were",
@@ -346,20 +354,19 @@ class ContextAssembler:
         # Sort by score desc, break ties by original position
         scored.sort(key=lambda x: (-x[0], x[1]))
 
-        # Pick top sentences (cap at 3), then restore original reading order
-        top_n = min(3, len(scored))
-        # Only include if they actually overlap with the query
-        best = [item for item in scored[:top_n] if item[0] > 0.0]
-        if not best:
-            # Zero overlap → return the single highest-scoring sentence
-            best = [scored[0]]
+        # Pick the single best matching sentence index
+        best_idx = scored[0][1]
 
-        best_sorted = sorted(best, key=lambda x: x[1])  # restore reading order
-        minimal_answer = " ".join(s for _, _, s in best_sorted).strip()
+        # Select a contiguous sentence window: 1 sentence before and 1 sentence after
+        start_idx = max(0, best_idx - 1)
+        end_idx = min(len(sentences), best_idx + 2)
+        window_sentences = sentences[start_idx:end_idx]
+
+        minimal_answer = " ".join(window_sentences).strip()
 
         logger.info(
-            f"Minimal span extracted ({len(best_sorted)} sentence(s), "
-            f"top overlap={best_sorted[0][0]:.2f}): '{minimal_answer[:80]}...'"
+            f"Contiguous sentence window extracted (size={len(window_sentences)}, "
+            f"best match index={best_idx}): '{minimal_answer[:80]}...'"
         )
 
         # ── Factual Span Sanitization ─────────────────────────────────────────

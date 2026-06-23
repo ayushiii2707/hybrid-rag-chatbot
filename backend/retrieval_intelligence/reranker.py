@@ -63,7 +63,7 @@ class Reranker:
             
             # Retrieve BM25 keyword score for this chunk
             keyword_score = keyword_scores.get(chunk_id, 0.0)
-
+            
             # Retrieve ranks for retrieval agreement check
             faiss_rank = cand.get("faiss_rank", 999)
             bm25_rank = cand.get("bm25_rank", 999)
@@ -146,6 +146,11 @@ class Reranker:
                 source_agreement_detected=source_agreement_detected,
                 supporting_chunks=supporting_chunks,
                 supporting_documents=supporting_documents
+            )
+
+            # Log after advanced confidence calculation (stage AFTER_ADVANCED_CONFIDENCE)
+            logger.info(
+                f"STAGE: AFTER_ADVANCED_CONFIDENCE | chunk_id={chunk_id} | confidence_score={score_details['score']}"
             )
 
             # Build rich scored chunk dictionary
