@@ -191,32 +191,11 @@ class QueryAuditLogger:
             "system_status":       "success",
         }
 
-        # 1. Sync file logging
+        # Priority 1: Write directly to PostgreSQL via synchronous database call to make DB the source of truth.
+        # Fallback to local JSONL if database is unavailable. Every modification includes this explanatory comment:
+        # "Migrated audit logging to write directly to PostgreSQL database with fallback local JSONL logging to ensure persistence audit reliability"
         try:
-            with open(self.log_file, "a", encoding="utf-8") as fh:
-                fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
-            logger.debug(f"Audit log written: query_id={query_id}")
-        except Exception as exc:
-            # ── CRITICAL: logging must never crash the pipeline ───────────────
-            logger.error(f"QueryAuditLogger: failed to write log entry: {exc}")
-            # Attempt to write a minimal failure marker
-            try:
-                failure_entry = {
-                    "query_id":     query_id,
-                    "timestamp":    timestamp,
-                    "query":        query[:200],
-                    "system_status": "logging_failed",
-                    "error":        str(exc),
-                }
-                with open(self.log_file, "a", encoding="utf-8") as fh:
-                    fh.write(json.dumps(failure_entry, ensure_ascii=False) + "\n")
-            except Exception:
-                pass  # Fully silenced — pipeline must not be affected
-
-        # 2. Async database logging
-        try:
-            self._executor.submit(
-                self._db_log_query,
+            self._db_log_query_sync(
                 query_id=query_id,
                 user_id=user_id,
                 email=email,
@@ -238,10 +217,76 @@ class QueryAuditLogger:
                 risk_level=risk_level,
                 security_reason=security_reason,
             )
+            # Log successfully written to database. Let's record system metrics update.
+            self._executor.submit(self._increment_metric, "successful_queries" if not blocked else "blocked_queries")
+            self._executor.submit(self._increment_metric, "queries_total")
         except Exception as db_exc:
-            logger.error(f"QueryAuditLogger: failed to submit background DB logging task: {db_exc}")
+            logger.error(f"PostgreSQL direct audit logging failed, falling back to JSONL: {db_exc}")
+            entry["system_status"] = "logging_failed"
+            entry["error"] = str(db_exc)
+            
+            # Local JSONL Failover Fallback Channel
+            try:
+                with open(self.log_file, "a", encoding="utf-8") as fh:
+                    fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            except Exception as file_exc:
+                logger.critical(f"Both DB audit logging and JSONL fallback logging failed: {file_exc}")
 
         return query_id
+
+    @staticmethod
+    def _increment_metric(name: str):
+        try:
+            from backend.database.db import SessionLocal
+            from sqlalchemy import text
+            with SessionLocal() as db:
+                db.execute(text(
+                    "INSERT INTO system_metrics (metric_name, metric_value) VALUES (:name, 1) "
+                    "ON CONFLICT (metric_name) DO UPDATE SET metric_value = system_metrics.metric_value + 1;"
+                ), {"name": name})
+                db.commit()
+        except Exception:
+            pass
+
+    @staticmethod
+    def _db_log_query_sync(**kwargs) -> None:
+        from backend.database.db import SessionLocal
+        from backend.auth.auth_models import QueryLog
+        import uuid
+        
+        with SessionLocal() as db:
+            u_id = None
+            if kwargs.get("user_id"):
+                try:
+                    u_id = uuid.UUID(str(kwargs["user_id"]))
+                except ValueError:
+                    pass
+
+            db_log = QueryLog(
+                query_id=kwargs["query_id"],
+                user_id=u_id,
+                email=kwargs.get("email"),
+                role=kwargs.get("role"),
+                query=kwargs["query"],
+                corrected_query=kwargs.get("corrected_query"),
+                query_granularity=kwargs.get("query_granularity"),
+                answer_found=kwargs.get("answer_found", False),
+                partial_match_found=kwargs.get("partial_match_found", False),
+                confidence=kwargs.get("confidence", 0.0),
+                confidence_band=kwargs.get("confidence_band"),
+                top_source_file=kwargs.get("top_source_file"),
+                top_page_number=kwargs.get("top_page_number"),
+                top_chunk_id=kwargs.get("top_chunk_id"),
+                retrieved_sources=kwargs.get("retrieved_sources"),
+                response_length=kwargs.get("response_length", 0),
+                processing_time_ms=kwargs.get("processing_time_ms", 0),
+                blocked=kwargs.get("blocked", False),
+                risk_level=kwargs.get("risk_level", "low"),
+                security_reason=kwargs.get("security_reason"),
+                system_status="success",
+            )
+            db.add(db_log)
+            db.commit()
 
     @staticmethod
     def _db_log_query(**kwargs) -> None:
@@ -256,8 +301,6 @@ class QueryAuditLogger:
             except ImportError:
                 import sys
                 import os
-                # Find parent directory of backend (workspace root)
-                # This file is in backend/logging/query_logger.py
                 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                 workspace_dir = os.path.dirname(backend_dir)
                 if workspace_dir not in sys.path:
@@ -309,6 +352,51 @@ class QueryAuditLogger:
         except Exception as init_err:
             logger.error(f"PostgreSQL DB logging task initialization failed: {init_err}")
 
+    def sync_failed_logs(self) -> None:
+        """
+        Reads local JSONL log file, attempts to retry and persist failed database logs,
+        and rewrites only the records that couldn't be synced or were successful.
+        """
+        # Every modification includes this explanatory comment:
+        # "Implemented JSONL to PostgreSQL sync routine to process failed log entries and restore auditing consistency"
+        if not os.path.exists(self.log_file):
+            return
+
+        retained_lines = []
+        synced_count = 0
+
+        try:
+            with open(self.log_file, "r", encoding="utf-8") as fh:
+                lines = fh.readlines()
+
+            for line in lines:
+                if not line.strip():
+                    continue
+                try:
+                    entry = json.loads(line.strip())
+                    # Only retry if system_status was logging_failed
+                    if entry.get("system_status") == "logging_failed":
+                        try:
+                            # Reformat or extract arguments for DB insertion
+                            self._db_log_query_sync(**entry)
+                            synced_count += 1
+                        except Exception as db_err:
+                            logger.error(f"Sync attempt failed for query_id={entry.get('query_id')}: {db_err}")
+                            retained_lines.append(line)
+                    else:
+                        retained_lines.append(line)
+                except Exception as parse_err:
+                    logger.warning(f"Error parsing log sync line: {parse_err}")
+                    retained_lines.append(line)
+
+            # Rewrite log file with only unsynced lines
+            if synced_count > 0:
+                with open(self.log_file, "w", encoding="utf-8") as fh:
+                    fh.writelines(retained_lines)
+                logger.info(f"Background Sync: Successfully synced {synced_count} failed logs to PostgreSQL.")
+        except Exception as e:
+            logger.error(f"Error during audit log sync process: {e}")
+
     def read_recent(self, n: int = 10) -> List[Dict[str, Any]]:
         """
         Returns the last N log entries as parsed dicts.
@@ -324,3 +412,4 @@ class QueryAuditLogger:
         except Exception as exc:
             logger.warning(f"QueryAuditLogger.read_recent: could not read log: {exc}")
             return []
+

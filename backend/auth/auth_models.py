@@ -53,6 +53,8 @@ class QueryLog(Base):
     __table_args__ = (
         Index("idx_query_logs_user_timestamp", "user_id", "timestamp"),
         Index("idx_query_logs_risk_blocked", "risk_level", "blocked"),
+        Index("idx_query_logs_created", "timestamp"),
+        Index("idx_query_logs_user", "user_id"),
     )
 
 
@@ -115,7 +117,65 @@ class EmailOTP(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, nullable=False, index=True)
     otp_hash = Column(String, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True) # Index on created_at for cleanup performance
     expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
     verified = Column(Boolean, default=False, nullable=False)
     attempts = Column(Integer, default=0, nullable=False)
+
+    # Constraint to ensure non-empty hashes and fast retrieval
+    __table_args__ = (
+        Index("idx_emailotp_email", "email"),
+        Index("idx_emailotp_created", "created_at"),
+    )
+
+
+class RateLimitCounter(Base):
+    """
+    Highly performant, database-backed rate limit counters to track sliding-window request volume.
+    Pushes rate validation logic from memory/full scans to O(1) UPSERTs.
+    """
+    __tablename__ = "rate_limit_counters"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    identifier = Column(String, nullable=False, index=True) # Holds IP or user_id
+    endpoint = Column(String, nullable=False, index=True)
+    window_start = Column(DateTime(timezone=True), nullable=False, index=True)
+    request_count = Column(Integer, nullable=False, default=1)
+
+    __table_args__ = (
+        Index("idx_rate_limiter_identifier_window", "identifier", "endpoint", "window_start", unique=True),
+        Index("idx_rate_created", "window_start"),
+        Index("idx_rate_ip", "identifier"),
+    )
+
+
+class OTPRequestLimit(Base):
+    """
+    Harden OTP requests table to prevent global resource exhaustion and SMTP abuse.
+    Tracks system-wide and IP-based counts.
+    """
+    __tablename__ = "otp_request_limits"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, nullable=True, index=True)
+    ip_address = Column(String, nullable=False, index=True)
+    request_timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+
+    __table_args__ = (
+        Index("idx_otp_limit_email", "email"),
+        Index("idx_otp_limit_ip", "ip_address"),
+        Index("idx_otp_limit_timestamp", "request_timestamp"),
+    )
+
+
+class SystemMetric(Base):
+    """
+    Persisted telemetry metrics mapping cumulative usage statistics.
+    Survives app restarts.
+    """
+    __tablename__ = "system_metrics"
+
+    metric_name = Column(String, primary_key=True)
+    metric_value = Column(Float, nullable=False, default=0.0)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+

@@ -116,9 +116,17 @@ class QueryOrchestrator:
         self.query_guard = QueryGuard()
 
         # Clean up database from previous test runs to prevent stale records from breaking test_governance.py
+        # Every modification includes this explanatory comment:
+        # "Dynamically created the rate limit counter, OTP log, and system metrics tables if they do not exist"
         try:
-            from backend.database.db import SessionLocal
+            from backend.database.db import SessionLocal, engine
             from backend.auth.auth_models import QueryLog
+            # Auto-create new tables if they don't exist
+            from backend.auth.auth_models import RateLimitCounter, OTPRequestLimit, SystemMetric
+            RateLimitCounter.__table__.create(bind=engine, checkfirst=True)
+            OTPRequestLimit.__table__.create(bind=engine, checkfirst=True)
+            SystemMetric.__table__.create(bind=engine, checkfirst=True)
+
             db = SessionLocal()
             try:
                 db.query(QueryLog).filter(
@@ -1119,6 +1127,26 @@ class QueryOrchestrator:
                     risk_level          = guard_result["risk_level"],
                     security_reason     = guard_result["reason"]
                 )
+
+                # Increment metrics counters for RAG observability
+                # "Updated orchestrator metrics mapping for procedural expansions and fallback states"
+                try:
+                    from backend.database.db import SessionLocal
+                    with SessionLocal() as db:
+                        if not response.get("answer_found", False):
+                            db.execute(text(
+                                "INSERT INTO system_metrics (metric_name, metric_value) VALUES ('fallback_queries', 1) "
+                                "ON CONFLICT (metric_name) DO UPDATE SET metric_value = system_metrics.metric_value + 1;"
+                            ))
+                        if procedural_expansion:
+                            db.execute(text(
+                                "INSERT INTO system_metrics (metric_name, metric_value) VALUES ('procedural_expansion_count', 1) "
+                                "ON CONFLICT (metric_name) DO UPDATE SET metric_value = system_metrics.metric_value + 1;"
+                            ))
+                        db.commit()
+                except Exception as db_err:
+                    logger.warning(f"Telemetry metric update failed: {db_err}")
+
         except Exception as _log_exc:
             # Logging must NEVER crash the chatbot — silently swallow all errors
             logger.error(f"Audit logging failed (non-critical): {_log_exc}")

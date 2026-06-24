@@ -2,22 +2,22 @@
   "per_category_metrics": {
     "procedural": {
       "total_queries": 30,
-      "correct_queries": 29,
-      "accuracy": 0.9666666666666667,
-      "average_latency_ms": 1949.7250694325583,
-      "min_latency_ms": 518.8910840079188,
-      "max_latency_ms": 4823.499040998286,
-      "average_confidence": 0.8789233333333333,
-      "retrieval_success_rate": 0.9666666666666667
+      "correct_queries": 30,
+      "accuracy": 1.0,
+      "average_latency_ms": 1069.9492472012935,
+      "min_latency_ms": 312.2992089993204,
+      "max_latency_ms": 1684.035665995907,
+      "average_confidence": 0.8988133333333334,
+      "retrieval_success_rate": 1.0
     },
     "typo": {
       "total_queries": 20,
       "correct_queries": 20,
       "accuracy": 1.0,
-      "average_latency_ms": 928.8781645998824,
-      "min_latency_ms": 13.880834012525156,
-      "max_latency_ms": 2464.162791002309,
-      "average_confidence": 0.45947000000000005,
+      "average_latency_ms": 460.3915772495384,
+      "min_latency_ms": 1.1902499973075464,
+      "max_latency_ms": 1295.6420420014183,
+      "average_confidence": 0.46893,
       "suggestion_accuracy": 1.0,
       "retrieval_accuracy": 1.0
     },
@@ -25,18 +25,18 @@
       "total_queries": 20,
       "correct_queries": 20,
       "accuracy": 1.0,
-      "average_latency_ms": 1472.5463874507113,
-      "min_latency_ms": 659.5617919811048,
-      "max_latency_ms": 3303.2434589986224,
-      "average_confidence": 0.82338
+      "average_latency_ms": 633.6199979010416,
+      "min_latency_ms": 272.9439579998143,
+      "max_latency_ms": 1402.3560830028146,
+      "average_confidence": 0.8222400000000001
     },
     "malicious": {
       "total_queries": 15,
       "correct_queries": 15,
       "accuracy": 1.0,
-      "average_latency_ms": 9.313099864327038,
-      "min_latency_ms": 0.49208299606107175,
-      "max_latency_ms": 91.38383399113081,
+      "average_latency_ms": 0.2701832675181019,
+      "min_latency_ms": 0.06183399818837643,
+      "max_latency_ms": 1.408290998369921,
       "average_confidence": 0.0,
       "block_rate_accuracy": 1.0
     },
@@ -44,61 +44,50 @@
       "total_queries": 15,
       "correct_queries": 15,
       "accuracy": 1.0,
-      "average_latency_ms": 18.570227732804295,
-      "min_latency_ms": 9.51870801509358,
-      "max_latency_ms": 69.96537500526756,
+      "average_latency_ms": 11.241077666636556,
+      "min_latency_ms": 6.841750000603497,
+      "max_latency_ms": 35.81233300064923,
       "average_confidence": 0.0
     }
   },
   "overall_metrics": {
     "total_queries": 100,
-    "correct_queries": 99,
-    "overall_accuracy": 0.99,
-    "average_overall_latency_ms": 1069.384930379456
+    "correct_queries": 100,
+    "overall_accuracy": 1.0,
+    "average_overall_latency_ms": 541.5137783306272
   },
-  "failure_cases_summary": [
-    {
-      "query_id": "Q029",
-      "query_text": "how do i submit onboarding application after finishing all sections",
-      "category": "procedural",
-      "expected_behavior": "retrieve_answer",
-      "final_action": "low_confidence_reject",
-      "confidence_score": 0.0,
-      "latency_ms": 2340.3986250050366,
-      "reason": "Procedural or synonym query was rejected due to low confidence (0.0000)."
-    }
-  ],
+  "failure_cases_summary": [],
   "latency_summary": {
     "overall": {
-      "average_ms": 1069.384930379456,
-      "min_ms": 0.49208299606107175,
-      "max_ms": 4823.499040998286
+      "average_ms": 541.5137783306272,
+      "min_ms": 0.06183399818837643,
+      "max_ms": 1684.035665995907
     },
     "per_category": {
       "procedural": {
-        "average_ms": 1949.7250694325583,
-        "min_ms": 518.8910840079188,
-        "max_ms": 4823.499040998286
+        "average_ms": 1069.9492472012935,
+        "min_ms": 312.2992089993204,
+        "max_ms": 1684.035665995907
       },
       "typo": {
-        "average_ms": 928.8781645998824,
-        "min_ms": 13.880834012525156,
-        "max_ms": 2464.162791002309
+        "average_ms": 460.3915772495384,
+        "min_ms": 1.1902499973075464,
+        "max_ms": 1295.6420420014183
       },
       "synonym": {
-        "average_ms": 1472.5463874507113,
-        "min_ms": 659.5617919811048,
-        "max_ms": 3303.2434589986224
+        "average_ms": 633.6199979010416,
+        "min_ms": 272.9439579998143,
+        "max_ms": 1402.3560830028146
       },
       "malicious": {
-        "average_ms": 9.313099864327038,
-        "min_ms": 0.49208299606107175,
-        "max_ms": 91.38383399113081
+        "average_ms": 0.2701832675181019,
+        "min_ms": 0.06183399818837643,
+        "max_ms": 1.408290998369921
       },
       "unrelated": {
-        "average_ms": 18.570227732804295,
-        "min_ms": 9.51870801509358,
-        "max_ms": 69.96537500526756
+        "average_ms": 11.241077666636556,
+        "min_ms": 6.841750000603497,
+        "max_ms": 35.81233300064923
       }
     }
   }

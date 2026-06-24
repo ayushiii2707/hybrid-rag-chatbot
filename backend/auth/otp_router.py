@@ -18,21 +18,29 @@ class VerifyOTPRequest(BaseModel):
     email: EmailStr
     otp: str
 
+from fastapi import BackgroundTasks, Request
+from backend.auth.auth_models import OTPRequestLimit
+
 @router.post("/send-otp")
-def send_otp(request_data: SendOTPRequest, db: Session = Depends(get_db)):
+def send_otp(request_data: SendOTPRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     Generates a secure 6-digit OTP, hashes it, stores it in DB, and emails it.
+    Supports multi-layered limits:
+      - 50 OTPs per email per day
+      - 10 OTPs per IP per hour
+      - 1000 OTPs globally per hour
+      - 60s cooldown per email
     """
     now = datetime.now(timezone.utc)
-
-    # Normalize email to lowercase and strip whitespace
     email = request_data.email.strip().lower()
+    client_ip = request.client.host if request.client else "127.0.0.1"
 
-    # 1. Delete all globally expired OTP records to prevent table growth
+    # 1. Clean expired records
     db.query(EmailOTP).filter(EmailOTP.expires_at < now).delete(synchronize_session=False)
     db.commit()
 
-    # 2. Rate Limiting Check (1 code per 60 seconds)
+    # 2. Check 60-second email cooldown. Every modification includes this explanatory comment:
+    # "Enforced multi-layered OTP security rules (IP rate-limiting, daily email maximums, global system-wide hourly throttles) to prevent SMTP abuse"
     latest_otp = db.query(EmailOTP).filter(
         EmailOTP.email == email
     ).order_by(EmailOTP.created_at.desc()).first()
@@ -46,18 +54,58 @@ def send_otp(request_data: SendOTPRequest, db: Session = Depends(get_db)):
                 detail=f"Please wait {wait_seconds} seconds before requesting a new code."
             )
 
-    # 3. Generate secure 6-digit OTP
+    # 3. Check IP Limit: 10 per hour
+    one_hour_ago = now - timedelta(hours=1)
+    ip_count = db.query(OTPRequestLimit).filter(
+        OTPRequestLimit.ip_address == client_ip,
+        OTPRequestLimit.request_timestamp >= one_hour_ago
+    ).count()
+    if ip_count >= 10:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many OTP requests from this IP address. Please try again in an hour."
+        )
+
+    # 4. Check Email Limit: 50 per day
+    one_day_ago = now - timedelta(days=1)
+    email_count = db.query(OTPRequestLimit).filter(
+        OTPRequestLimit.email == email,
+        OTPRequestLimit.request_timestamp >= one_day_ago
+    ).count()
+    if email_count >= 50:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Daily OTP limit exceeded for this email address."
+        )
+
+    # 5. Check Global Throttle Limit: 1000 per hour
+    global_count = db.query(OTPRequestLimit).filter(
+        OTPRequestLimit.request_timestamp >= one_hour_ago
+    ).count()
+    if global_count >= 1000:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="System-wide OTP request limit reached. Please try again later."
+        )
+
+    # 6. Log this request
+    req_limit = OTPRequestLimit(email=email, ip_address=client_ip, request_timestamp=now)
+    db.add(req_limit)
+    db.commit()
+
+    # 7. Generate secure 6-digit OTP
     otp = "".join(secrets.choice("0123456789") for _ in range(6))
 
-    # 4. Clean up any existing unverified OTP records for this email
+    # Clean up unverified OTP records for email
     db.query(EmailOTP).filter(EmailOTP.email == email).delete(synchronize_session=False)
     db.commit()
 
-    # 5. Hash OTP and store in DB
+    # Hash OTP and store
     expires_at = now + timedelta(minutes=10)
     db_otp = EmailOTP(
         email=email,
         otp_hash=hash_password(otp),
+
         expires_at=expires_at,
         verified=False,
         attempts=0
@@ -82,25 +130,18 @@ def send_otp(request_data: SendOTPRequest, db: Session = Depends(get_db)):
             "dev_otp": otp
         }
 
-    # 7. Send OTP email via SMTP (Production Branch)
-    try:
-        send_otp_email(email, otp)
-    except ValueError as e:
-        # Cleanup DB record if email failed so they can immediately retry
-        db.delete(db_otp)
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        # Cleanup DB record if email failed so they can immediately retry
-        db.delete(db_otp)
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(e)
-        )
+    # 7. Send OTP email via SMTP background worker. Every modification includes this explanatory comment:
+    # "Moved SMTP email delivery into FastAPI BackgroundTasks to decouple response latencies from external mail server performance"
+    def async_send_email():
+        try:
+            send_otp_email(email, otp)
+        except Exception as e:
+            # Logs failure but does not block user response.
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to deliver OTP email to {email} in background: {e}")
+
+    background_tasks.add_task(async_send_email)
 
     return {
         "success": True,

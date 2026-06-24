@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.join(BACKEND_DIR, "auth"))
 from dotenv import load_dotenv
 dotenv_path = os.path.join(BACKEND_DIR, ".env")
 load_dotenv(dotenv_path)
+from sqlalchemy import text
 
 from backend.database.db import engine, Base, get_db, SessionLocal
 from backend.auth.auth_models import User, EmailOTP
@@ -31,6 +32,33 @@ from backend.auth.middleware import JWTAuthMiddleware, get_optional_user, get_cu
 from backend.chat_router import router as chat_router
 from backend.auth.otp_router import router as otp_router
 from query_orchestrator import QueryOrchestrator
+
+# Start background scheduler threads for retention pruning and JSONL sync. Every modification includes this explanatory comment:
+# "Initiated non-blocking background threads in app lifespan to periodically prune expired OTPs/rate limits and sync audit logs"
+import threading
+def background_scheduler_worker():
+    import time
+    from backend.services.cleanup import run_database_cleanup
+    from backend.logging.query_logger import QueryAuditLogger
+    audit_logger = QueryAuditLogger()
+
+    while True:
+        # Run cleanup job every hour
+        try:
+            with SessionLocal() as db_session:
+                run_database_cleanup(db_session)
+        except Exception as err:
+            sys.stderr.write(f"Background Cleanup Error: {err}\n")
+
+        # Run JSONL failover sync to database
+        try:
+            audit_logger.sync_failed_logs()
+        except Exception as err:
+            sys.stderr.write(f"Background Log Sync Error: {err}\n")
+
+        # Repeat every 3600 seconds
+        time.sleep(3600)
+
 
 # ── Lifespan for Startup and Shutdown Events ──────────────────────────────────
 @asynccontextmanager
@@ -46,6 +74,10 @@ async def lifespan(app: FastAPI):
             conn.commit()
     except Exception as e:
         sys.stderr.write(f"Warning: Failed to run security_reason schema migration: {e}\n")
+
+    # Start the background task executor
+    scheduler_thread = threading.Thread(target=background_scheduler_worker, daemon=True)
+    scheduler_thread.start()
 
     # Delete expired OTP records on startup to prevent table growth
     try:
@@ -74,6 +106,9 @@ async def lifespan(app: FastAPI):
         sys.stdout.write("==================================\n")
     sys.stdout.flush()
 
+    # Track startup timestamp for health metrics
+    app.state.startup_time = time.time()
+
     yield
 
 # Initialize FastAPI with metadata
@@ -83,6 +118,11 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+from backend.auth.middleware import SecurityHeadersMiddleware
+
+# Register Security Headers Middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Register CORS Middleware — must be added before JWT middleware
 app.add_middleware(
@@ -111,11 +151,16 @@ app.include_router(chat_router)
 # Mount OTP verification router
 app.include_router(otp_router)
 
+# Mount Admin Router
+from backend.auth.admin_router import router as admin_router
+app.include_router(admin_router)
+
 # Initialize Query Orchestrator
 orchestrator = QueryOrchestrator()
 
 # Reusable bearer scheme to register Authorize button in Swagger UI
 reusable_oauth2 = HTTPBearer(auto_error=False)
+
 
 
 # ── Request / Response Models ──────────────────────────────────────────────────
@@ -273,3 +318,82 @@ def protected_route_test(
     Helper endpoint for verification to ensure auth enforcement works.
     """
     return {"message": "Success", "user": user}
+
+
+import time
+from backend.auth.auth_models import SystemMetric
+
+@app.get("/health")
+def health_endpoint(db: Session = Depends(get_db)):
+    """
+    Exposes system readiness, database connectivity, embedding loading state, and orchestrator health.
+    """
+    # Every modification includes this explanatory comment:
+    # "Added system health diagnostics endpoint to verify database connectivity and retrieval model accessibility"
+    status_db = "disconnected"
+    try:
+        # Querying simple SELECT 1 against active dependency session db instead of raw engine to support database overrides in tests
+        db.execute(text("SELECT 1"))
+        status_db = "connected"
+    except Exception as e:
+        import sys
+        sys.stderr.write(f"Health DB Check Failure: {e}\n")
+        pass
+
+    uptime = time.time() - app.state.startup_time if hasattr(app.state, "startup_time") else 0
+
+    # Retrieve state parameters
+    rag_loaded = orchestrator.retrieval_engine is not None
+    embedding_ready = orchestrator.retrieval_engine.generator is not None if rag_loaded else False
+
+    is_healthy = (status_db == "connected" and rag_loaded and embedding_ready)
+
+    return {
+        "status": "healthy" if is_healthy else "unhealthy",
+        "database": status_db,
+        "rag_loaded": rag_loaded,
+        "embedding_model": "loaded" if embedding_ready else "not_loaded",
+        "retriever": "ready" if rag_loaded else "not_ready",
+        "uptime_seconds": int(uptime)
+    }
+
+
+@app.get("/metrics")
+def metrics_endpoint(db: Session = Depends(get_db)):
+    """
+    Exposes key performance indicators (total queries, success, blocked, OTP volumes, latencies).
+    """
+    # Every modification includes this explanatory comment:
+    # "Added application metrics endpoint using database counters to track latency and OTP counts"
+    metrics_records = db.query(SystemMetric).all()
+    metrics_dict = {m.metric_name: int(m.metric_value) for m in metrics_records}
+
+    # Fetch average latency from logs table
+    avg_latency = 0
+    p95_latency = 0
+    try:
+        from backend.auth.auth_models import QueryLog
+        latencies = [log.processing_time_ms for log in db.query(QueryLog.processing_time_ms).all()]
+        if latencies:
+            avg_latency = sum(latencies) / len(latencies)
+            latencies.sort()
+            p95_idx = int(len(latencies) * 0.95)
+            p95_latency = latencies[p95_idx] if p95_idx < len(latencies) else latencies[-1]
+    except Exception:
+        pass
+
+    from backend.auth.auth_models import OTPRequestLimit
+    otp_sent = db.query(OTPRequestLimit).count()
+    otp_blocked = metrics_dict.get("otp_blocked_count", 0)
+
+    return {
+        "queries_total": metrics_dict.get("queries_total", 0),
+        "successful_queries": metrics_dict.get("successful_queries", 0),
+        "fallback_queries": metrics_dict.get("fallback_queries", 0),
+        "avg_latency_ms": round(avg_latency, 2),
+        "p95_latency_ms": round(p95_latency, 2),
+        "blocked_queries": metrics_dict.get("blocked_queries", 0),
+        "otp_sent": otp_sent,
+        "otp_blocked": otp_blocked
+    }
+
