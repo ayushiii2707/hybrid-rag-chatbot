@@ -133,6 +133,26 @@ async function apiSoftDeleteConversation(convId: string): Promise<void> {
     throw new Error(data.detail || data.message || 'Failed to soft delete conversation');
   }
 }
+function getRelativeShortTime(dateStr: string): string {
+  if (!dateStr) return 'now';
+  const d = new Date(dateStr);
+  const diffMs = Date.now() - d.getTime();
+  if (isNaN(diffMs) || diffMs < 0) return 'now';
+  
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffMonths = Math.floor(diffDays / 30);
+  const diffYears = Math.floor(diffDays / 365);
+
+  if (diffMins < 1) return 'now';
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffHours < 24) return `${diffHours}h`;
+  if (diffDays < 30) return `${diffDays}d`;
+  if (diffMonths < 12) return `${diffMonths}mo`;
+  return `${diffYears}y`;
+}
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -144,6 +164,23 @@ export default function RelatusDashboard({ onLogout, theme = 'dark', userEmail =
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [feedbackClosed, setFeedbackClosed] = useState(false);
+  const [hoveredThreeDotsMsgId, setHoveredThreeDotsMsgId] = useState<string | null>(null);
+  const [activeDropdownMsgId, setActiveDropdownMsgId] = useState<string | null>(null);
+  const [hoveredAction, setHoveredAction] = useState<{ msgId: string, action: string } | null>(null);
+  const [pinnedConvIds, setPinnedConvIds] = useState<string[]>(() => {
+    try {
+      const val = localStorage.getItem('relatus_pinned_convs');
+      return val ? JSON.parse(val) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [hoveredPinId, setHoveredPinId] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('relatus_pinned_convs', JSON.stringify(pinnedConvIds));
+  }, [pinnedConvIds]);
 
   // ── Conversation / history state ─────────────────────────────────────────────
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -272,6 +309,19 @@ export default function RelatusDashboard({ onLogout, theme = 'dark', userEmail =
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // ── Click-outside to close three-dots dropdown ──────────────────────────────
+  useEffect(() => {
+    if (!activeDropdownMsgId) return;
+    const h = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      if (!t.closest('.three-dots-container') && !t.closest('.three-dots-dropdown')) {
+        setActiveDropdownMsgId(null);
+      }
+    };
+    document.addEventListener('click', h);
+    return () => document.removeEventListener('click', h);
+  }, [activeDropdownMsgId]);
 
   // ── New Chat ─────────────────────────────────────────────────────────────────
   // CORRECT behavior:
@@ -846,34 +896,116 @@ export default function RelatusDashboard({ onLogout, theme = 'dark', userEmail =
                   <div style={{ padding: '8px 12px', fontSize: '12px', color: textMuted, fontStyle: 'italic', userSelect: 'none' }}>
                     No recent chats
                   </div>
-                ) : (
-                  conversations.map(conv => (
-                    <div
-                      key={conv.id}
-                      className={`conv-item ${conv.id === currentConversationId ? 'active-conv' : ''}`}
-                      onClick={() => handleOpenConversation(conv)}
-                      title={conv.title}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
-                        <MessageSquare size={13} style={{ flexShrink: 0, opacity: 0.7, color: conv.id === currentConversationId ? textColor : textMuted }} />
-                        <span style={{
-                          fontSize: '12px',
-                          fontWeight: conv.id === currentConversationId ? 600 : 400,
-                          color: conv.id === currentConversationId ? textColor : textMuted,
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>
-                          {conv.title.length > 28 ? conv.title.slice(0, 28) + '…' : conv.title}
-                        </span>
-                      </div>
-                      <button
-                        className="conv-delete-btn"
-                        onClick={(e) => handleDeleteConversation(e, conv.id)}
-                        title="Delete conversation"
+                                ) : (
+                  [...conversations].sort((a, b) => {
+                    const aPinned = pinnedConvIds.includes(a.id);
+                    const bPinned = pinnedConvIds.includes(b.id);
+                    if (aPinned && !bPinned) return -1;
+                    if (!aPinned && bPinned) return 1;
+                    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+                  }).map(conv => {
+                    const isPinned = pinnedConvIds.includes(conv.id);
+                    const isHovered = hoveredConvId === conv.id;
+                    return (
+                      <div
+                        key={conv.id}
+                        className={`conv-item ${conv.id === currentConversationId ? 'active-conv' : ''}`}
+                        onClick={() => handleOpenConversation(conv)}
+                        onMouseEnter={() => setHoveredConvId(conv.id)}
+                        onMouseLeave={() => setHoveredConvId(null)}
+                        title={conv.title}
+                        style={{ position: 'relative' }}
                       >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  ))
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                          <MessageSquare size={13} style={{ flexShrink: 0, opacity: 0.7, color: conv.id === currentConversationId ? textColor : textMuted }} />
+                          <span style={{
+                            fontSize: '12px',
+                            fontWeight: conv.id === currentConversationId ? 600 : 400,
+                            color: conv.id === currentConversationId ? textColor : textMuted,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}>
+                            {conv.title.length > 25 ? conv.title.slice(0, 25) + '…' : conv.title}
+                          </span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                          {/* Pin/Unpin button (visible on hover or if already pinned) */}
+                          {(isHovered || isPinned) && (
+                            <div
+                              style={{ position: 'relative', display: 'flex', alignItems: 'center' }}
+                              onMouseEnter={() => setHoveredPinId(conv.id)}
+                              onMouseLeave={() => setHoveredPinId(null)}
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (isPinned) {
+                                    setPinnedConvIds(pinnedConvIds.filter(id => id !== conv.id));
+                                  } else {
+                                    setPinnedConvIds([conv.id, ...pinnedConvIds]);
+                                  }
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  padding: '4px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  color: isPinned ? '#3b82f6' : textMuted,
+                                  opacity: 0.8,
+                                  transition: 'opacity 0.2s, color 0.2s',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                                onMouseLeave={e => e.currentTarget.style.opacity = '0.8'}
+                              >
+                                {isPinned ? (
+                                  /* Unpin icon */
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="2" y1="2" x2="22" y2="22" />
+                                    <path d="M12 17v5M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.5M15 9.26V5a2 2 0 0 0-2-2h-2" />
+                                  </svg>
+                                ) : (
+                                  /* Pin icon */
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="17" x2="12" y2="22" />
+                                    <path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.5A2 2 0 0 1 15 9.26V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.26a2 2 0 0 1-.78 1.24l-2.78 3.5a2 2 0 0 0-.44 1.24Z" />
+                                  </svg>
+                                )}
+                              </button>
+
+                              {/* Pin Tooltip */}
+                              {hoveredPinId === conv.id && (
+                                <div style={{
+                                  position: 'absolute',
+                                  bottom: '100%',
+                                  right: '50%',
+                                  transform: 'translateX(50%) translateY(-6px)',
+                                  backgroundColor: '#1e1e1e',
+                                  color: '#ffffff',
+                                  padding: '6px 12px',
+                                  borderRadius: '8px',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  whiteSpace: 'nowrap',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                  zIndex: 100,
+                                }}>
+                                  {isPinned ? 'Unpin Conversation' : 'Pin Conversation'}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Time elapsed since search/creation */}
+                          <span style={{ fontSize: '11px', color: textMuted, width: '32px', textAlign: 'right', display: 'inline-block' }}>
+                            {getRelativeShortTime(conv.updated_at || conv.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}
@@ -1027,27 +1159,445 @@ export default function RelatusDashboard({ onLogout, theme = 'dark', userEmail =
                   )}
 
                   {/* Bubble */}
-                  <div 
-                    onClick={() => {
-                      if (msg.sender === 'ai' && msg.text.includes('retry')) {
-                        handleRetry();
-                      }
-                    }}
-                    style={{
-                      padding: '12px 18px',
-                      borderRadius: msg.sender === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-                      backgroundColor: msg.sender === 'user' ? '#007AFF' : (isDark ? '#333333' : '#E9E9EB'),
-                      color: msg.sender === 'user' ? '#FFFFFF' : (isDark ? '#FFFFFF' : '#000000'),
-                      fontSize: '15px', lineHeight: 1.4, whiteSpace: 'pre-wrap',
-                      cursor: (msg.sender === 'ai' && msg.text.includes('retry')) ? 'pointer' : 'default',
-                      border: (msg.sender === 'ai' && msg.text.includes('retry')) ? '1px dashed #ef4444' : undefined,
-                    }}
-                  >
-                    {msg.text}
-                    <div style={{ fontSize: '10px', color: msg.sender === 'user' ? 'rgba(255,255,255,0.7)' : textMuted, textAlign: 'right', marginTop: '6px' }}>
-                      {msg.timestamp}
+                  {msg.sender === 'user' ? (
+                    <div 
+                      style={{
+                        padding: '12px 18px',
+                        borderRadius: '20px 20px 4px 20px',
+                        backgroundColor: '#007AFF',
+                        color: '#FFFFFF',
+                        fontSize: '15px', lineHeight: 1.4, whiteSpace: 'pre-wrap',
+                        display: 'flex',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      <div>{msg.text}</div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginTop: '8px',
+                        gap: '24px'
+                      }}>
+                        {/* Copy button on the left */}
+                        <div
+                          style={{ position: 'relative', display: 'inline-block' }}
+                          onMouseEnter={() => setHoveredAction({ msgId: msg.id, action: 'copy_user' })}
+                          onMouseLeave={() => setHoveredAction(null)}
+                        >
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(msg.text);
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              color: 'rgba(255, 255, 255, 0.7)',
+                              opacity: 0.8,
+                              transition: 'opacity 0.2s',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                            onMouseLeave={e => e.currentTarget.style.opacity = '0.8'}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                              <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                            </svg>
+                          </button>
+                          {hoveredAction?.msgId === msg.id && hoveredAction?.action === 'copy_user' && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '100%',
+                              left: '50%',
+                              transform: 'translateX(-50%) translateY(6px)',
+                              backgroundColor: '#1e1e1e',
+                              color: '#ffffff',
+                              padding: '6px 12px',
+                              borderRadius: '8px',
+                              fontSize: '13px',
+                              fontWeight: 600,
+                              whiteSpace: 'nowrap',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                              zIndex: 100,
+                            }}>
+                              Copy message
+                            </div>
+                          )}
+                        </div>
+                        {/* Timestamp on the right */}
+                        <span style={{ fontSize: '10px', color: 'rgba(255, 255, 255, 0.7)' }}>
+                          {msg.timestamp}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                      <div 
+                        onClick={() => {
+                          if (msg.text.includes('retry')) {
+                            handleRetry();
+                          }
+                        }}
+                        style={{
+                          padding: '12px 18px',
+                          borderRadius: '20px 20px 20px 4px',
+                          backgroundColor: isDark ? '#333333' : '#E9E9EB',
+                          color: isDark ? '#FFFFFF' : '#000000',
+                          fontSize: '15px', lineHeight: 1.4, whiteSpace: 'pre-wrap',
+                          cursor: msg.text.includes('retry') ? 'pointer' : 'default',
+                          border: msg.text.includes('retry') ? '1px dashed #ef4444' : undefined,
+                        }}
+                      >
+                        {msg.text}
+                      </div>
+
+                      {/* Footer beneath the bubble */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginTop: '2px',
+                        position: 'relative'
+                      }}>
+                        {/* Left-hand side actions bar */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          {/* Copy */}
+                          <div
+                            style={{ position: 'relative', display: 'inline-block' }}
+                            onMouseEnter={() => setHoveredAction({ msgId: msg.id, action: 'copy_ai' })}
+                            onMouseLeave={() => setHoveredAction(null)}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => navigator.clipboard.writeText(msg.text)}
+                              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: textMuted, display: 'flex', alignItems: 'center' }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                              </svg>
+                            </button>
+                            {hoveredAction?.msgId === msg.id && hoveredAction?.action === 'copy_ai' && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%) translateY(6px)',
+                                backgroundColor: '#1e1e1e',
+                                color: '#ffffff',
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                zIndex: 100,
+                              }}>
+                                Copy response
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Thumbs Up */}
+                          <div
+                            style={{ position: 'relative', display: 'inline-block' }}
+                            onMouseEnter={() => setHoveredAction({ msgId: msg.id, action: 'like' })}
+                            onMouseLeave={() => setHoveredAction(null)}
+                          >
+                            <button
+                              type="button"
+                              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: textMuted, display: 'flex', alignItems: 'center' }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M7 10v12" />
+                                <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88z" />
+                              </svg>
+                            </button>
+                            {hoveredAction?.msgId === msg.id && hoveredAction?.action === 'like' && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%) translateY(6px)',
+                                backgroundColor: '#1e1e1e',
+                                color: '#ffffff',
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                zIndex: 100,
+                              }}>
+                                Good response
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Thumbs Down */}
+                          <div
+                            style={{ position: 'relative', display: 'inline-block' }}
+                            onMouseEnter={() => setHoveredAction({ msgId: msg.id, action: 'dislike' })}
+                            onMouseLeave={() => setHoveredAction(null)}
+                          >
+                            <button
+                              type="button"
+                              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: textMuted, display: 'flex', alignItems: 'center' }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 14V2" />
+                                <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8a2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88z" />
+                              </svg>
+                            </button>
+                            {hoveredAction?.msgId === msg.id && hoveredAction?.action === 'dislike' && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%) translateY(6px)',
+                                backgroundColor: '#1e1e1e',
+                                color: '#ffffff',
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                zIndex: 100,
+                              }}>
+                                Bad response
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Share */}
+                          <div
+                            style={{ position: 'relative', display: 'inline-block' }}
+                            onMouseEnter={() => setHoveredAction({ msgId: msg.id, action: 'share' })}
+                            onMouseLeave={() => setHoveredAction(null)}
+                          >
+                            <button
+                              type="button"
+                              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: textMuted, display: 'flex', alignItems: 'center' }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                                <polyline points="16 6 12 2 8 6" />
+                                <line x1="12" y1="2" x2="12" y2="15" />
+                              </svg>
+                            </button>
+                            {hoveredAction?.msgId === msg.id && hoveredAction?.action === 'share' && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%) translateY(6px)',
+                                backgroundColor: '#1e1e1e',
+                                color: '#ffffff',
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                zIndex: 100,
+                              }}>
+                                Share
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Regenerate */}
+                          <div
+                            style={{ position: 'relative', display: 'inline-block' }}
+                            onMouseEnter={() => setHoveredAction({ msgId: msg.id, action: 'retry' })}
+                            onMouseLeave={() => setHoveredAction(null)}
+                          >
+                            <button
+                              type="button"
+                              onClick={handleRetry}
+                              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: textMuted, display: 'flex', alignItems: 'center' }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                                <path d="M16 3h5v5" />
+                                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                                <path d="M8 21H3v-5" />
+                              </svg>
+                            </button>
+                            {hoveredAction?.msgId === msg.id && hoveredAction?.action === 'retry' && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%) translateY(6px)',
+                                backgroundColor: '#1e1e1e',
+                                color: '#ffffff',
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                zIndex: 100,
+                              }}>
+                                Try again
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Three Dots Container with Tooltip/Dropdown */}
+                          <div 
+                            className="three-dots-container"
+                            style={{ position: 'relative', display: 'inline-block' }}
+                            onMouseEnter={() => setHoveredThreeDotsMsgId(msg.id)}
+                            onMouseLeave={() => setHoveredThreeDotsMsgId(null)}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDropdownMsgId(activeDropdownMsgId === msg.id ? null : msg.id);
+                              }}
+                              style={{
+                                background: activeDropdownMsgId === msg.id ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)') : 'none',
+                                border: 'none',
+                                padding: '4px',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                color: textMuted,
+                                display: 'flex',
+                                alignItems: 'center',
+                                transition: 'background-color 0.2s',
+                              }}
+                            >
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="1.5" />
+                                <circle cx="19" cy="12" r="1.5" />
+                                <circle cx="5" cy="12" r="1.5" />
+                              </svg>
+                            </button>
+
+                            {/* Tooltip "More actions" - shown on hover if dropdown is NOT active */}
+                            {hoveredThreeDotsMsgId === msg.id && activeDropdownMsgId !== msg.id && (
+                              <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: '50%',
+                                transform: 'translateX(-50%) translateY(6px)',
+                                backgroundColor: '#1e1e1e',
+                                color: '#ffffff',
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                zIndex: 100,
+                              }}>
+                                More actions
+                              </div>
+                            )}
+
+                            {/* Dropdown Menu - shown when clicked */}
+                            {activeDropdownMsgId === msg.id && (
+                              <div 
+                                className="three-dots-dropdown"
+                                style={{
+                                  position: 'absolute',
+                                  top: '100%',
+                                  left: 0,
+                                  marginTop: '6px',
+                                  backgroundColor: isDark ? '#2a2a2a' : '#ffffff',
+                                  border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+                                  borderRadius: '8px',
+                                  padding: '4px 0',
+                                  minWidth: '170px',
+                                  boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                                  zIndex: 101,
+                                }}
+                              >
+                                {/* Branch in new chat */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveDropdownMsgId(null);
+                                    handleNewChat();
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    padding: '8px 12px',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: isDark ? '#ffffff' : '#000000',
+                                    fontSize: '13px',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
+                                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M18 15l3 3-3 3" />
+                                    <path d="M18 9l3-3-3-3" />
+                                    <path d="M21 18H9a4 4 0 0 1-4-4V6" />
+                                    <path d="M21 6H9a4 4 0 0 0-4 4v10" />
+                                  </svg>
+                                  Branch in new chat
+                                </button>
+
+                                {/* Read aloud */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveDropdownMsgId(null);
+                                    const speech = new SpeechSynthesisUtterance(msg.text);
+                                    window.speechSynthesis.speak(speech);
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    padding: '8px 12px',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: isDark ? '#ffffff' : '#000000',
+                                    fontSize: '13px',
+                                    textAlign: 'left',
+                                    cursor: 'pointer',
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
+                                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                                  </svg>
+                                  Read aloud
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right-hand side timestamp */}
+                        <span style={{ fontSize: '10px', color: textMuted }}>
+                          {msg.timestamp}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
 

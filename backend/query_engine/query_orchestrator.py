@@ -217,6 +217,66 @@ class QueryOrchestrator:
             "confidence": round(confidence, 4)
         }
 
+    def _handle_small_talk(self, query: str) -> Optional[str]:
+        import re
+        import random
+        
+        normalized = query.lower().strip()
+        normalized = re.sub(r'[^\w\s\?]', '', normalized).strip()
+        
+        if re.search(r'\b(hi|hello|hey|hola|greetings|howdy)\b', normalized):
+            if not any(k in normalized for k in ["how are you", "whats up", "what is up", "what are you doing"]):
+                return random.choice([
+                    "Hey! How's your day going?",
+                    "Hello! How's your day going?",
+                    "Hi there! How is your day going?",
+                    "Hey! Hope you are having a wonderful day."
+                ])
+                
+        if re.search(r'\b(whats up|what is up|sup|whats new|what is new)\b', normalized) or normalized == "whats up":
+            return random.choice([
+                "Not much—just here and ready to help. What's on your mind?",
+                "Not a lot! Just here and ready to assist you. What's on your mind?",
+                "Not much, just ready to chat. What's on your mind?"
+            ])
+            
+        if re.search(r'\b(how are you|how you doing|hows it going|how is it going|how do you do)\b', normalized):
+            return random.choice([
+                "I'm doing well and ready to chat. How are you?",
+                "I'm doing great, thank you! How are you doing today?",
+                "Doing well and ready to help! How are you?"
+            ])
+            
+        if re.search(r'\b(good morning|morning)\b', normalized):
+            return random.choice([
+                "Good morning! Any plans for today?",
+                "Morning! Hope you have a wonderful day ahead. Any plans?",
+                "Good morning! How can I help you today?"
+            ])
+            
+        if re.search(r'\b(what are you doing|what you doing|what are you up to|what you up to|what do you do)\b', normalized):
+            return random.choice([
+                "Talking with you right now.",
+                "Just chatting with you!",
+                "Enjoying our conversation right now."
+            ])
+            
+        if re.search(r'\b(thanks|thank you|thanks a lot|ty|appreciate it)\b', normalized):
+            return random.choice([
+                "You're welcome!",
+                "Anytime! Let me know if you need anything else.",
+                "Happy to help!"
+            ])
+            
+        if re.search(r'\b(bye|goodbye|see you later|bye bye|talk to you later|take care)\b', normalized):
+            return random.choice([
+                "Take care! See you next time.",
+                "Goodbye! Have a great day!",
+                "Bye! Let's chat again soon."
+            ])
+            
+        return None
+
     def answer_query(
         self,
         query: str,
@@ -262,6 +322,55 @@ class QueryOrchestrator:
             response["base_chunk"] = None
             response["expanded_chunks"] = 0
             response["expansion_reason"] = None
+            return response
+
+        # Check for small talk / greetings
+        small_talk_resp = self._handle_small_talk(query)
+        if small_talk_resp:
+            response = self.formatter.format_response(
+                query=query,
+                corrected_query=query,
+                confirmation_required=False,
+                answer_found=True,
+                confidence=1.0
+            )
+            response["synthesized_answer"] = small_talk_resp
+            response["procedural_expansion"] = False
+            response["full_procedure_returned"] = False
+            response["procedure_length"] = 0
+            response["base_chunk"] = None
+            response["expanded_chunks"] = 0
+            response["expansion_reason"] = None
+            response["blocked"] = False
+            response["risk_level"] = "low"
+            
+            # Log small talk immediately
+            if self.audit_logger is not None:
+                _processing_ms = int((time.monotonic() - _query_start_time) * 1000)
+                try:
+                    self.audit_logger.log_query(
+                        query=query,
+                        corrected_query=query,
+                        query_granularity="factual",
+                        answer_found=True,
+                        partial_match_found=False,
+                        confidence=1.0,
+                        confidence_band="high",
+                        top_source_file=None,
+                        top_page_number=None,
+                        top_chunk_id=None,
+                        retrieved_sources=[],
+                        synthesized_answer=small_talk_resp,
+                        processing_time_ms=_processing_ms,
+                        user_id=user_id,
+                        email=email,
+                        role=role,
+                        blocked=False,
+                        risk_level="low",
+                        security_reason=None
+                    )
+                except Exception as _log_exc:
+                    logger.error(f"Audit logging failed for small talk (non-critical): {_log_exc}")
             return response
 
         # Step 1. Preprocessing (whitespace cleaning + typo corrections)
