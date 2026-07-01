@@ -65,6 +65,30 @@ def background_scheduler_worker():
 async def lifespan(app: FastAPI):
     # Initialize database tables on startup
     Base.metadata.create_all(bind=engine)
+
+    # Seed default user accounts for manual validation/testing
+    try:
+        from backend.auth.auth_service import register_user
+        from backend.auth.auth_models import User
+        with SessionLocal() as db_session:
+            default_users = [
+                ("ayushir2707@gmail.com", "vendor"),
+                ("swadha945@gmail.com", "vendor"),
+                ("ayushihihi7@gmail.com", "vendor"),
+                ("admin@ril.com", "admin")
+            ]
+            for email, role in default_users:
+                exists = db_session.query(User).filter(User.email == email.lower()).first()
+                if not exists:
+                    register_user(
+                        db=db_session,
+                        email=email.lower(),
+                        password_raw="Password123!",
+                        role=role
+                    )
+                    sys.stdout.write(f"Startup Seed: Created default user {email} ({role}) with password 'Password123!'\n")
+    except Exception as seed_err:
+        sys.stderr.write(f"Warning: Failed to seed default users: {seed_err}\n")
     
     # Run schema migration dynamically to ensure security_reason column exists
     from sqlalchemy import text
@@ -297,8 +321,16 @@ def query_endpoint(
     # Derive the single clean answer — blocked queries get the policy message
     if raw_response.get("blocked"):
         answer = "This query violates enterprise security policies."
-    elif raw_response.get("answer_found") is False and raw_response.get("message"):
-        answer = raw_response["message"]
+    elif raw_response.get("answer_found") is False:
+        # Added customized fallback answers corresponding to the query's topic context (Add Delivery Location vs Supplier Registration Manual) when no valid answer is retrieved
+        if raw_response.get("message"):
+            answer = raw_response["message"]
+        else:
+            q_lower = request_data.query.lower()
+            if "delivery" in q_lower or "location" in q_lower:
+                answer = "I'm not sure about that specific question. Please refer to the Add Delivery Location User Manual, contact your Reliance Buyer, or reach out to rrsrportal@ril.com for assistance."
+            else:
+                answer = "I'm not sure about that specific question. Please check the Supplier Registration Manual or contact your Reliance Buyer for assistance. You can also check your registration status at https://supplierregistration.ril.com/"
     else:
         answer = (
             raw_response.get("synthesized_answer")

@@ -187,18 +187,33 @@ def main() -> None:
     logger.info(f"Total chunks generated across all sources: {len(all_chunks)}")
 
     # 4. Initialize Embedding and Vector Store Layers
-    logger.info("Initializing EmbeddingGenerator and FAISSVectorStore...")
-    generator = EmbeddingGenerator(config_path=str(config_path))
-    vector_store = FAISSVectorStore(config_path=str(config_path))
+    # Clear PostgreSQL tables for clean validation before initializing vector store
+    from backend.database.db import SessionLocal
+    from backend.auth.auth_models import Chunk, Document, VectorMap
+    db = SessionLocal()
+    try:
+        db.query(VectorMap).delete()
+        db.query(Chunk).delete()
+        db.query(Document).delete()
+        db.commit()
+        logger.info("Cleared PostgreSQL database tables to perform clean validation.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to clear database tables: {e}")
+    finally:
+        db.close()
 
-    # Reset any existing index file to start fresh for validation
-    idx_p = vector_store.index_path
-    meta_p = vector_store.metadata_path
+    # Reset any existing index files to start fresh for validation before initializing store
+    idx_p = os.path.join(os.path.dirname(__file__), "faiss_index.bin")
+    meta_p = os.path.join(os.path.dirname(__file__), "metadata.json")
     if os.path.exists(idx_p):
         os.remove(idx_p)
     if os.path.exists(meta_p):
         os.remove(meta_p)
-    logger.info("Cleared pre-existing index files on disk to perform clean validation.")
+
+    logger.info("Initializing EmbeddingGenerator and FAISSVectorStore...")
+    generator = EmbeddingGenerator(config_path=str(config_path))
+    vector_store = FAISSVectorStore(config_path=str(config_path))
 
     # 5. Generate and Add Embeddings
     logger.info("Generating embeddings for all chunks...")

@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Index, Text, Integer, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID, JSONB, TSVECTOR
 from sqlalchemy.sql import func
 from backend.database.db import Base
 
@@ -178,4 +178,48 @@ class SystemMetric(Base):
     metric_name = Column(String, primary_key=True)
     metric_value = Column(Float, nullable=False, default=0.0)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class Document(Base):
+    """
+    Model representing ingested PDFs.
+    """
+    __tablename__ = "documents"
+
+    id = Column(String, primary_key=True)  # doc_id (sha256 hex)
+    source_file = Column(String, nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class Chunk(Base):
+    """
+    Model representing text chunks extracted from documents.
+    """
+    __tablename__ = "chunks"
+
+    chunk_id = Column(String, primary_key=True)
+    doc_id = Column(String, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    page_number = Column(Integer, nullable=False, index=True)
+    chunk_index = Column(Integer, nullable=False)
+    text = Column(Text, nullable=False)
+    section_title = Column(String, nullable=True)
+    subsection_title = Column(String, nullable=True)
+    procedure_id = Column(String, nullable=True)
+    alternate_phrasings = Column(JSONB, nullable=True)
+    tsv_content = Column(TSVECTOR().with_variant(Text, "sqlite"), nullable=True)
+
+    __table_args__ = (
+        Index("idx_chunks_tsv", "tsv_content", postgresql_using="gin"),
+        Index("idx_chunks_doc_page", "doc_id", "page_number"),
+    )
+
+
+class VectorMap(Base):
+    """
+    Model mapping FAISS vector IDs to text chunk IDs.
+    """
+    __tablename__ = "vector_maps"
+
+    vector_id = Column(Integer, primary_key=True)  # FAISS index offset
+    chunk_id = Column(String, ForeignKey("chunks.chunk_id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
 
