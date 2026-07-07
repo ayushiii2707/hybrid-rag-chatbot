@@ -1,6 +1,52 @@
 # Hybrid RAG Chatbot
 
-A high-performance, production-hardened hybrid retrieval-augmented generation (RAG) chatbot backend and rich, immersive 3D frontend. The project combines dense semantic vector search (FAISS + Sentence Transformers) and sparse lexical search (BM25) with a spelling corrector, entity matcher, and confidence scoring models to retrieve high-precision contexts and generate accurate chatbot responses.
+A production-ready Hybrid RAG Chatbot using FastAPI, FAISS, BM25, PostgreSQL, React & Three.js with authentication, hybrid retrieval, reranking, and secure REST APIs.
+
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.128.0-009688.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18-61DAFB.svg)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6.svg)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+---
+
+## Table of Contents
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture Overview](#architecture-overview)
+- [Folder Structure](#folder-structure)
+- [Installation & Configuration](#installation--configuration)
+- [Running the Project](#running-the-project)
+- [API Documentation](#api-documentation)
+- [Future Improvements](#future-improvements)
+- [License](#license)
+
+---
+
+## Features
+
+- **Hybrid Retrieval**: Combines semantic retrieval (dense vectors via FAISS and `sentence-transformers`) with lexical search (sparse keyword match via BM25).
+- **Reciprocal Rank Fusion (RRF)**: Merges sparse and dense search results using rank-based reciprocal scores.
+- **Cross-Encoder Reranking**: Re-orders fused candidates to ensure the most relevant contexts are prioritized in the LLM window.
+- **Advanced Preprocessing**: Performs tokenization, spelling correction (`symspellpy`), and entity matching (`spacy`) on the input query.
+- **Factual Context Assembly**: Synthesizes clean context blocks with reference citations, checking for query-context relevance.
+- **Confidence Scoring & Guardrails**: Scores the confidence of the retrieved context and runs guardrails (`QueryGuard`) to prevent prompt injection and hallucinations.
+- **Interactive 3D Web Interface**: Immersive frontend featuring custom WebGL, Three.js scenes, interactive charts, and dashboard views.
+
+---
+
+## Tech Stack
+
+### Backend
+- **Core Framework**: FastAPI, Uvicorn, Pydantic (v2)
+- **Database & ORM**: PostgreSQL, SQLAlchemy, Psycopg2-binary
+- **Retrieval & NLP**: SpaCy, SymSpellPy, FAISS-cpu, Sentence-Transformers, NumPy, PyMuPDF (PyMuPDF / Fitz)
+- **Security**: python-dotenv, python-jose, bcrypt
+
+### Frontend
+- **Framework**: React, Vite, TypeScript
+- **UI Components**: Radix UI, Tailwind CSS, Framer Motion, Lucide Icons, Recharts
+- **WebGL / 3D Graphics**: Three.js, React Three Fiber, React Three Drei, GSAP
 
 ---
 
@@ -38,33 +84,6 @@ flowchart TD
         P --> Response[Final Answer & Reference Citations]
     end
 ```
-
----
-
-## Features
-
-- **Hybrid Retrieval**: Combines semantic retrieval (dense vectors via FAISS and `sentence-transformers`) with lexical search (sparse keyword match via BM25).
-- **Reciprocal Rank Fusion (RRF)**: Merges sparse and dense search results using rank-based reciprocal scores.
-- **Cross-Encoder Reranking**: Re-orders fused candidates to ensure the most relevant contexts are prioritized in the LLM window.
-- **Advanced Preprocessing**: Performs tokenization, spelling correction (`symspellpy`), and entity matching (`spacy`) on the input query.
-- **Factual Context Assembly**: Synthesizes clean context blocks with reference citations, checking for query-context relevance.
-- **Confidence Scoring & Guardrails**: Scores the confidence of the retrieved context and runs guardrails (`QueryGuard`) to prevent prompt injection and halluncinations.
-- **Interactive 3D Web Interface**: Immersive frontend featuring custom WebGL, Three.js scenes, interactive charts, and dashboard views.
-
----
-
-## Tech Stack
-
-### Backend
-- **Core Framework**: FastAPI, Uvicorn, Pydantic (v2)
-- **Database & ORM**: PostgreSQL, SQLAlchemy, Psycopg2-binary
-- **Retrieval & NLP**: SpaCy, SymSpellPy, FAISS-cpu, Sentence-Transformers, NumPy, PyMuPDF (PyMuPDF / Fitz)
-- **Security**: python-dotenv, python-jose, bcrypt
-
-### Frontend
-- **Framework**: React, Vite, TypeScript
-- **UI Components**: Radix UI, Tailwind CSS, Framer Motion, Lucide Icons, Recharts
-- **WebGL / 3D Graphics**: Three.js, React Three Fiber, React Three Drei, GSAP
 
 ---
 
@@ -123,7 +142,7 @@ Fill out the variables including `DATABASE_URL` and `JWT_SECRET_KEY`.
 
 ---
 
-## Running the Application
+## Running the Project
 
 ### 1. Backend Setup & Run
 Install the dependencies from the root directory:
@@ -153,7 +172,7 @@ pnpm --filter "@workspace/particle-site" run dev
 
 ---
 
-## API Documentation
+## API Endpoints
 The backend exposes RESTful endpoints:
 - `POST /auth/register` - Registers a new user.
 - `POST /auth/login` - Authenticates and returns a JWT token.
