@@ -106,8 +106,16 @@ class QueryPreprocessor:
         "supplier registration": ["onboarding", "vendor registration"],
         "supplier registration application": ["vendor registration", "onboarding"],
         "onboarding application": ["vendor registration", "supplier registration", "request id generation approval"],
-        "onboarding process": ["vendor registration", "supplier registration", "onboarding"],
+        "onboarding process": ["vendor registration", "supplier registration", "onboarding", "registration steps", "registration flow"],
         "vendor onboarding": ["vendor registration", "onboarding", "supplier registration"],
+        "registration flow": ["registration process", "registration steps", "onboarding process", "onboarding steps", "steps in the registration"],
+        "onboarding flow": ["registration process", "registration steps", "onboarding process", "onboarding steps", "steps in the registration"],
+        "registration process": ["registration steps", "registration flow", "onboarding process"],
+        "flow": ["process", "steps", "workflow"],
+        "stages of supplier onboarding": ["registration steps", "registration process", "onboarding steps", "onboarding process"],
+        "stages of registration": ["registration steps", "registration process", "onboarding steps", "onboarding process"],
+        "stages": ["steps", "process", "flow", "workflow"],
+        "stage": ["step", "process", "flow", "workflow"],
         "submit onboarding application": ["submit form", "final submission", "request id generation approval"],
         # ─ Delivery / Physical Address ───────────────────────────────────
         "delivery location": ["delivery address", "shipment location", "delivery site"],
@@ -152,6 +160,7 @@ class QueryPreprocessor:
         q_lower = query.lower()
         appended_terms: List[str] = []
 
+        # 1. Dictionary-based synonym expansion
         # Match multi-word keys first (longest key first to avoid partial overlaps)
         sorted_keys = sorted(self.ENTERPRISE_SYNONYM_MAP.keys(), key=lambda k: -len(k.split()))
         covered_spans: List[tuple] = []  # (start, end) character spans already consumed
@@ -170,6 +179,46 @@ class QueryPreprocessor:
                     for expansion_term in self.ENTERPRISE_SYNONYM_MAP[key]:
                         if expansion_term.lower() not in q_lower and expansion_term not in appended_terms:
                             appended_terms.append(expansion_term)
+
+        # 2. Rule-based Semantic Intent Mapping (handles arbitrary alternative phrasings)
+        def has_any(words):
+            return any(w in q_lower for w in words)
+
+        # -- PAN Validation Rules --
+        if has_any(["pan", "permanent account number"]):
+            if has_any(["rule", "format", "look", "structure", "validation", "criteria", "requirements", "valid", "length", "character"]):
+                if not has_any(["upload", "file", "document", "pdf", "jpg"]):
+                    for term in ["pan validation rules", "pan structure rules", "format of pan", "validation rules for pan"]:
+                        if term not in appended_terms:
+                            appended_terms.append(term)
+
+        # -- GSTIN / GST Validation/Uniqueness --
+        if has_any(["gst", "gstin"]):
+            if has_any(["duplicate", "validation", "rules", "exist", "uniqueness", "check", "verify", "rule", "multiple"]):
+                for term in ["duplicate gstin validation", "duplicate validation rules", "gstin validation rules"]:
+                    if term not in appended_terms:
+                        appended_terms.append(term)
+
+        # -- FSSAI Active Status --
+        if has_any(["fssai", "food safety"]):
+            if has_any(["status", "active", "inactive", "check", "verify", "link", "portal"]):
+                for term in ["active inactive status", "fssai active status", "fssai status check", "fssai verification"]:
+                    if term not in appended_terms:
+                        appended_terms.append(term)
+
+        # -- UDYAM / MSME Validation/Verification --
+        if has_any(["udyam", "msme"]):
+            if has_any(["rule", "format", "verify", "check", "validation", "structure", "length", "issue", "validity", "character"]):
+                for term in ["udyam validation rules", "udyam number format", "udyam verification", "udyam validity"]:
+                    if term not in appended_terms:
+                        appended_terms.append(term)
+
+        # -- Registration Steps / Flow --
+        if has_any(["registration", "onboarding", "onboard", "register"]):
+            if has_any(["step", "steps", "flow", "stages", "stage", "process", "workflow", "procedure", "how"]):
+                for term in ["registration steps", "registration process", "onboarding process", "registration flow", "stages of supplier onboarding"]:
+                    if term not in appended_terms:
+                        appended_terms.append(term)
 
         if appended_terms:
             expanded_query = query.strip() + " " + " ".join(appended_terms)

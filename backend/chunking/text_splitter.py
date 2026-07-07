@@ -1,12 +1,17 @@
 import logging
 import re
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 # Compile regex patterns once at import time
 SECTION_RE = re.compile(
     r'^\s*(?:[A-Z]\.\s+([A-Z0-9][A-Za-z0-9\s:,\-\(\)/&]{2,100}\.?)|[Tt]able\s+of\s+[Cc]ontents|[Aa]dditional\s+[Ii]nformation)\s*$'
+)
+
+ENTERPRISE_SECTION_RE = re.compile(
+    r'^\s*(?:(?:[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)*)\s*[-.:]?\s+)?(Purpose|Scope|Eligibility|Applicability|Prerequisites|Overview|Introduction|Description|Notes|Definitions|Responsibilities|Process|Procedure|Steps|Approval\s+Matrix|Business\s+Rules|Inputs|Outputs)\s*[:.]?\s*$',
+    re.IGNORECASE
 )
 
 SUBSECTION_RE = re.compile(
@@ -18,6 +23,35 @@ STEP_BOUNDARY_RE = re.compile(
     r'^\s*(?:(?:Step|Stage|Phase)\s*\d+|(?:\d+(?:\.\d+)*)[\.\)]?\s+\w|[\-\*\u2022]\s+\w)',
     re.IGNORECASE
 )
+
+
+def parse_heading(line: str, current_section: Optional[str] = None) -> Tuple[Optional[str], Optional[str]]:
+    """Parse a line to detect section or subsection headings.
+
+    Returns a tuple (heading_type, heading_text) where heading_type is "section",
+    "subsection", or None. Promotes a subsection to a section when there is no
+    current_section context or it is "Table of Contents".
+    """
+    stripped = line.strip()
+    if not stripped:
+        return (None, None)
+
+    # Detect top-level sections
+    match = SECTION_RE.match(stripped) or ENTERPRISE_SECTION_RE.match(stripped)
+    if match:
+        # SECTION_RE may capture group 1 as title; fallback to whole line
+        title = match.group(1) if match.lastindex and match.lastindex >= 1 else stripped
+        return ("section", title.strip())
+
+    # Detect subsections like "Step 1: Title"
+    sub_match = SUBSECTION_RE.match(stripped)
+    if sub_match:
+        title = sub_match.group(3).strip()
+        if not current_section or current_section.lower() == "table of contents":
+            return ("section", title)
+        return ("subsection", title)
+
+    return (None, None)
 
 
 def slugify(text: str) -> str:
@@ -67,28 +101,7 @@ def extract_step_numbers(text: str) -> List[str]:
     return step_nums
 
 
-def parse_heading(line: str):
-    """Detects if a line is a section or subsection heading."""
-    line_stripped = line.strip()
-    if not line_stripped:
-        return None, None
-    
-    # Try section matching first
-    sec_match = SECTION_RE.match(line_stripped)
-    if sec_match:
-        return "section", line_stripped
-        
-    # Try subsection matching
-    subsec_match = SUBSECTION_RE.match(line_stripped)
-    if subsec_match:
-        return "subsection", line_stripped
-        
-    # Fallback for just "Step 1"
-    step_only_match = re.match(r'^\s*(Step|Stage|Phase)\s+(\d+)\s*$', line_stripped, re.IGNORECASE)
-    if step_only_match:
-        return "subsection", line_stripped
-        
-    return None, None
+
 
 
 BOILERPLATE_PATTERNS = [
@@ -132,7 +145,11 @@ def group_lines_into_steps(lines: List[str]) -> List[List[str]]:
     for line in lines:
         line_stripped = line.strip()
         is_boundary = bool(STEP_BOUNDARY_RE.match(line_stripped))
-        is_heading = bool(SECTION_RE.match(line_stripped) or SUBSECTION_RE.match(line_stripped))
+        is_heading = bool(
+            SECTION_RE.match(line_stripped) or
+            ENTERPRISE_SECTION_RE.match(line_stripped) or
+            SUBSECTION_RE.match(line_stripped)
+        )
         
         if (is_boundary or is_heading) and current_unit:
             step_units.append(current_unit)
@@ -273,7 +290,7 @@ class DocumentChunker:
                     blocks[-1]["lines"].append(line)
                 continue
                 
-            heading_type, heading_text = parse_heading(line)
+            heading_type, heading_text = parse_heading(line, self.current_section_title)
             if heading_type == "section":
                 self.current_section_title = heading_text
                 self.current_subsection_title = None
@@ -380,7 +397,38 @@ class DocumentChunker:
             if len(current_units) > 1:
                 i = last_added_idx
                 
-        return chunks
+        # Merge tiny chunks with previous chunk if safe to avoid low-information fragments
+        merged_chunks = []
+        tiny_threshold = min(150, self.chunk_size // 3)
+        for chunk_text in chunks:
+            if not chunk_text.strip():
+                continue
+            if not merged_chunks:
+                merged_chunks.append(chunk_text)
+                continue
+            
+            prev_chunk = merged_chunks[-1]
+            # Check if either chunk is tiny (e.g. < tiny_threshold characters)
+            # and combined length fits in chunk_size + tiny_threshold
+            if (len(chunk_text) < tiny_threshold or len(prev_chunk) < tiny_threshold) and (len(prev_chunk) + len(chunk_text) + 1 <= self.chunk_size + tiny_threshold):
+                prev_lines = prev_chunk.split('\n')
+                curr_lines = chunk_text.split('\n')
+                
+                common_count = 0
+                for pl, cl in zip(prev_lines, curr_lines):
+                    if pl.strip() == cl.strip():
+                        common_count += 1
+                    else:
+                        break
+                
+                suffix = "\n".join(curr_lines[common_count:])
+                if suffix.strip():
+                    if suffix.strip() not in prev_chunk:
+                        merged_chunks[-1] = prev_chunk + "\n" + suffix
+            else:
+                merged_chunks.append(chunk_text)
+                
+        return merged_chunks
 
     def chunk_document(self, preprocessed_doc: Dict[str, Any]) -> List[Dict[str, Any]]:
         doc_id = preprocessed_doc["doc_id"]
@@ -401,7 +449,7 @@ class DocumentChunker:
 
             if self.strategy == "page":
                 for line in clean_text.split('\n'):
-                    heading_type, heading_text = parse_heading(line)
+                    heading_type, heading_text = parse_heading(line, self.current_section_title)
                     if heading_type == "section":
                         self.current_section_title = heading_text
                         self.current_subsection_title = None
@@ -464,6 +512,16 @@ class DocumentChunker:
                                 "detected_step_numbers": extract_step_numbers(split_text)
                             }
                         })
+
+        # Deduplicate exact duplicate chunks (same page number and same text content)
+        deduplicated_chunks = []
+        seen_chunks = set()
+        for chunk in chunks_output:
+            key = (chunk["page_number"], chunk["text"])
+            if key not in seen_chunks:
+                seen_chunks.add(key)
+                deduplicated_chunks.append(chunk)
+        chunks_output = deduplicated_chunks
 
         total_chunks = len(chunks_output)
         for idx, chunk in enumerate(chunks_output):

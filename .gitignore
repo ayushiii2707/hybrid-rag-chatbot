@@ -1,4 +1,4 @@
-# Python
+# Python environment and caches
 __pycache__/
 *.pyc
 *.pyo
@@ -6,18 +6,39 @@ __pycache__/
 .venv/
 venv/
 ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
 
-# Databases & local files
+# Node.js / frontend dependencies and builds
+node_modules/
+frontend/node_modules/
+dist/
+build/
+.npm
+.eslintcache
+
+# Environment configurations (secrets)
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+
+# Databases & local SQLite files
 *.db
+*.sqlite
 chatbot.db
 backend/chatbot.db
+test_prod.db
 
 # Logs
 logs/
 backend/logs/
 *.log
 
-# OS files
+# OS metadata files
 .DS_Store
 .DS_Store?
 ._*
@@ -25,3 +46,13 @@ backend/logs/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# IDE settings and editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+

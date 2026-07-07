@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Index, Text, Integer, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID, JSONB, TSVECTOR
 from sqlalchemy.sql import func
 from backend.database.db import Base
 
@@ -53,4 +53,173 @@ class QueryLog(Base):
     __table_args__ = (
         Index("idx_query_logs_user_timestamp", "user_id", "timestamp"),
         Index("idx_query_logs_risk_blocked", "risk_level", "blocked"),
+        Index("idx_query_logs_created", "timestamp"),
+        Index("idx_query_logs_user", "user_id"),
     )
+
+
+class Conversation(Base):
+    """
+    Persistent conversation session linked to a user.
+    Supports soft-delete so records are retained for audit.
+    """
+    __tablename__ = "conversations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    title = Column(String, nullable=False, default="New Chat")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    is_deleted = Column(Boolean, default=False, nullable=False)
+
+    __table_args__ = (
+        # Fast sidebar query: fetch all active convs for a user sorted by recency
+        Index("idx_conversations_user_active_updated", "user_id", "is_deleted", "updated_at"),
+    )
+
+
+class Message(Base):
+    """
+    Individual chat message belonging to a Conversation.
+    Role is either 'user' or 'assistant'.
+    """
+    __tablename__ = "messages"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("conversations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role = Column(String, nullable=False)   # 'user' | 'assistant'
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        # Ordered message retrieval for a conversation
+        Index("idx_messages_conversation_created", "conversation_id", "created_at"),
+    )
+
+
+class EmailOTP(Base):
+    """
+    Model representing email OTP verification codes.
+    Stores the bcrypt hash of the OTP for security.
+    """
+    __tablename__ = "email_otps"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, nullable=False, index=True)
+    otp_hash = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True) # Index on created_at for cleanup performance
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    verified = Column(Boolean, default=False, nullable=False)
+    attempts = Column(Integer, default=0, nullable=False)
+
+    # Constraint to ensure non-empty hashes and fast retrieval
+    __table_args__ = (
+        Index("idx_emailotp_email", "email"),
+        Index("idx_emailotp_created", "created_at"),
+    )
+
+
+class RateLimitCounter(Base):
+    """
+    Highly performant, database-backed rate limit counters to track sliding-window request volume.
+    Pushes rate validation logic from memory/full scans to O(1) UPSERTs.
+    """
+    __tablename__ = "rate_limit_counters"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    identifier = Column(String, nullable=False, index=True) # Holds IP or user_id
+    endpoint = Column(String, nullable=False, index=True)
+    window_start = Column(DateTime(timezone=True), nullable=False, index=True)
+    request_count = Column(Integer, nullable=False, default=1)
+
+    __table_args__ = (
+        Index("idx_rate_limiter_identifier_window", "identifier", "endpoint", "window_start", unique=True),
+        Index("idx_rate_created", "window_start"),
+        Index("idx_rate_ip", "identifier"),
+    )
+
+
+class OTPRequestLimit(Base):
+    """
+    Harden OTP requests table to prevent global resource exhaustion and SMTP abuse.
+    Tracks system-wide and IP-based counts.
+    """
+    __tablename__ = "otp_request_limits"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, nullable=True, index=True)
+    ip_address = Column(String, nullable=False, index=True)
+    request_timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+
+    __table_args__ = (
+        Index("idx_otp_limit_email", "email"),
+        Index("idx_otp_limit_ip", "ip_address"),
+        Index("idx_otp_limit_timestamp", "request_timestamp"),
+    )
+
+
+class SystemMetric(Base):
+    """
+    Persisted telemetry metrics mapping cumulative usage statistics.
+    Survives app restarts.
+    """
+    __tablename__ = "system_metrics"
+
+    metric_name = Column(String, primary_key=True)
+    metric_value = Column(Float, nullable=False, default=0.0)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class Document(Base):
+    """
+    Model representing ingested PDFs.
+    """
+    __tablename__ = "documents"
+
+    id = Column(String, primary_key=True)  # doc_id (sha256 hex)
+    source_file = Column(String, nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class Chunk(Base):
+    """
+    Model representing text chunks extracted from documents.
+    """
+    __tablename__ = "chunks"
+
+    chunk_id = Column(String, primary_key=True)
+    doc_id = Column(String, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    page_number = Column(Integer, nullable=False, index=True)
+    chunk_index = Column(Integer, nullable=False)
+    text = Column(Text, nullable=False)
+    section_title = Column(String, nullable=True)
+    subsection_title = Column(String, nullable=True)
+    procedure_id = Column(String, nullable=True)
+    alternate_phrasings = Column(JSONB, nullable=True)
+    tsv_content = Column(TSVECTOR().with_variant(Text, "sqlite"), nullable=True)
+
+    __table_args__ = (
+        Index("idx_chunks_tsv", "tsv_content", postgresql_using="gin"),
+        Index("idx_chunks_doc_page", "doc_id", "page_number"),
+    )
+
+
+class VectorMap(Base):
+    """
+    Model mapping FAISS vector IDs to text chunk IDs.
+    """
+    __tablename__ = "vector_maps"
+
+    vector_id = Column(Integer, primary_key=True)  # FAISS index offset
+    chunk_id = Column(String, ForeignKey("chunks.chunk_id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+

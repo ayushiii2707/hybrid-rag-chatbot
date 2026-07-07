@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Particle Website"
+version = "1.0.0"
+id = "artifacts/particle-site"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20782
+
+[services.development]
+run = "pnpm --filter @workspace/particle-site run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/particle-site", "run", "build" ]
+publicDir = "artifacts/particle-site/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20782"
+BASE_PATH = "/"

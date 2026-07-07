@@ -4,20 +4,20 @@
       "total_queries": 30,
       "correct_queries": 30,
       "accuracy": 1.0,
-      "average_latency_ms": 712.4753567671481,
-      "min_latency_ms": 188.22904099943116,
-      "max_latency_ms": 1345.4055000038352,
-      "average_confidence": 0.84296,
+      "average_latency_ms": 1069.9492472012935,
+      "min_latency_ms": 312.2992089993204,
+      "max_latency_ms": 1684.035665995907,
+      "average_confidence": 0.8988133333333334,
       "retrieval_success_rate": 1.0
     },
     "typo": {
       "total_queries": 20,
       "correct_queries": 20,
       "accuracy": 1.0,
-      "average_latency_ms": 320.786981251149,
-      "min_latency_ms": 5.200125015107915,
-      "max_latency_ms": 785.4539590189233,
-      "average_confidence": 0.452965,
+      "average_latency_ms": 460.3915772495384,
+      "min_latency_ms": 1.1902499973075464,
+      "max_latency_ms": 1295.6420420014183,
+      "average_confidence": 0.46893,
       "suggestion_accuracy": 1.0,
       "retrieval_accuracy": 1.0
     },
@@ -25,18 +25,18 @@
       "total_queries": 20,
       "correct_queries": 20,
       "accuracy": 1.0,
-      "average_latency_ms": 488.45340215048054,
-      "min_latency_ms": 240.62204200890847,
-      "max_latency_ms": 777.8204580245074,
-      "average_confidence": 0.7550549999999999
+      "average_latency_ms": 633.6199979010416,
+      "min_latency_ms": 272.9439579998143,
+      "max_latency_ms": 1402.3560830028146,
+      "average_confidence": 0.8222400000000001
     },
     "malicious": {
       "total_queries": 15,
       "correct_queries": 15,
       "accuracy": 1.0,
-      "average_latency_ms": 2.2309778665658087,
-      "min_latency_ms": 0.0668749853502959,
-      "max_latency_ms": 18.193209019955248,
+      "average_latency_ms": 0.2701832675181019,
+      "min_latency_ms": 0.06183399818837643,
+      "max_latency_ms": 1.408290998369921,
       "average_confidence": 0.0,
       "block_rate_accuracy": 1.0
     },
@@ -44,9 +44,9 @@
       "total_queries": 15,
       "correct_queries": 15,
       "accuracy": 1.0,
-      "average_latency_ms": 8.88024166924879,
-      "min_latency_ms": 5.082124989712611,
-      "max_latency_ms": 33.92879100283608,
+      "average_latency_ms": 11.241077666636556,
+      "min_latency_ms": 6.841750000603497,
+      "max_latency_ms": 35.81233300064923,
       "average_confidence": 0.0
     }
   },
@@ -54,40 +54,40 @@
     "total_queries": 100,
     "correct_queries": 100,
     "overall_accuracy": 1.0,
-    "average_overall_latency_ms": 377.2573666408425
+    "average_overall_latency_ms": 541.5137783306272
   },
   "failure_cases_summary": [],
   "latency_summary": {
     "overall": {
-      "average_ms": 377.2573666408425,
-      "min_ms": 0.0668749853502959,
-      "max_ms": 1345.4055000038352
+      "average_ms": 541.5137783306272,
+      "min_ms": 0.06183399818837643,
+      "max_ms": 1684.035665995907
     },
     "per_category": {
       "procedural": {
-        "average_ms": 712.4753567671481,
-        "min_ms": 188.22904099943116,
-        "max_ms": 1345.4055000038352
+        "average_ms": 1069.9492472012935,
+        "min_ms": 312.2992089993204,
+        "max_ms": 1684.035665995907
       },
       "typo": {
-        "average_ms": 320.786981251149,
-        "min_ms": 5.200125015107915,
-        "max_ms": 785.4539590189233
+        "average_ms": 460.3915772495384,
+        "min_ms": 1.1902499973075464,
+        "max_ms": 1295.6420420014183
       },
       "synonym": {
-        "average_ms": 488.45340215048054,
-        "min_ms": 240.62204200890847,
-        "max_ms": 777.8204580245074
+        "average_ms": 633.6199979010416,
+        "min_ms": 272.9439579998143,
+        "max_ms": 1402.3560830028146
       },
       "malicious": {
-        "average_ms": 2.2309778665658087,
-        "min_ms": 0.0668749853502959,
-        "max_ms": 18.193209019955248
+        "average_ms": 0.2701832675181019,
+        "min_ms": 0.06183399818837643,
+        "max_ms": 1.408290998369921
       },
       "unrelated": {
-        "average_ms": 8.88024166924879,
-        "min_ms": 5.082124989712611,
-        "max_ms": 33.92879100283608
+        "average_ms": 11.241077666636556,
+        "min_ms": 6.841750000603497,
+        "max_ms": 35.81233300064923
       }
     }
   }

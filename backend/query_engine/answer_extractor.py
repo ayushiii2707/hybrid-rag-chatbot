@@ -93,9 +93,16 @@ class AnswerExtractor:
         best_score = float(similarities[best_idx])
 
         # 5. Extract excerpt context (include adjacent sentence if target is short)
-        excerpt = best_sentence
-        if len(best_sentence) < 150 and best_idx + 1 < len(sentences):
-            excerpt = f"{best_sentence} {sentences[best_idx + 1]}"
+        is_faq = (
+            "answer:" in chunk_text.lower() or
+            "question:" in chunk_text.lower()
+        )
+        if is_faq:
+            excerpt = chunk_text.strip()
+        else:
+            excerpt = best_sentence
+            if len(best_sentence) < 150 and best_idx + 1 < len(sentences):
+                excerpt = f"{best_sentence} {sentences[best_idx + 1]}"
 
         logger.info(
             f"Extracted answer excerpt (density={best_score:.4f}): '{excerpt[:100]}...'"
