@@ -1,52 +1,63 @@
 # Hybrid RAG Chatbot
 
-A production-ready Hybrid RAG Chatbot using FastAPI, FAISS, BM25, PostgreSQL, React & Three.js with authentication, hybrid retrieval, reranking, and secure REST APIs.
+An enterprise-grade, high-performance hybrid retrieval-augmented generation (RAG) chatbot system featuring dense semantic vector search (FAISS + Sentence Transformers), sparse lexical search (BM25), cross-encoder reranking, robust query guardrails, and an immersive 3D WebGL user interface.
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.128.0-009688.svg)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18-61DAFB.svg)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python CI](https://github.com/ayushiii2707/hybrid-rag-chatbot/actions/workflows/python.yml/badge.svg)](https://github.com/ayushiii2707/hybrid-rag-chatbot/actions/workflows/python.yml)
+
+---
+
+## Key Highlights
+
+* ⚡ **Multi-Stage Retrieval Engine**: Fuses dense semantic search results (`FAISS` + `sentence-transformers`) with sparse lexical queries (`BM25`) using Reciprocal Rank Fusion (RRF) and filters candidates through a Cross-Encoder Reranker.
+* 🛡️ **Advanced NLP Preprocessing**: Employs real-time spelling correction (`symspellpy`) and named entity extraction (`spacy`) to clean incoming query strings before search execution.
+* 📊 **Confidence Evaluation & Guardrails**: Evaluates context-query alignment on-the-fly to assign confidence scores and runs proactive security filters (`QueryGuard`) to stop prompt injections.
+* 🎨 **Immersive 3D Visualization**: Built with Vite, React Three Fiber, React Three Drei, and GSAP to render interactive 3D WebGL scenes, particle networks, and rich data tables.
+* 📈 **Offline Benchmarking**: Standardized test harnesses and benchmark files (`benchmark_queries.csv`) to test accuracy, completeness, and response times.
 
 ---
 
 ## Table of Contents
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Architecture Overview](#architecture-overview)
-- [Folder Structure](#folder-structure)
-- [Installation & Configuration](#installation--configuration)
-- [Running the Project](#running-the-project)
-- [API Documentation](#api-documentation)
-- [Future Improvements](#future-improvements)
-- [License](#license)
+1. [Features](#features)
+2. [Tech Stack](#tech-stack)
+3. [Architecture Overview](#architecture-overview)
+4. [Folder Structure](#folder-structure)
+5. [Installation & Configuration](#installation--configuration)
+6. [Running the Project](#running-the-project)
+7. [API Endpoints](#api-endpoints)
+8. [Future Improvements](#future-improvements)
+9. [License](#license)
 
 ---
 
 ## Features
 
-- **Hybrid Retrieval**: Combines semantic retrieval (dense vectors via FAISS and `sentence-transformers`) with lexical search (sparse keyword match via BM25).
-- **Reciprocal Rank Fusion (RRF)**: Merges sparse and dense search results using rank-based reciprocal scores.
-- **Cross-Encoder Reranking**: Re-orders fused candidates to ensure the most relevant contexts are prioritized in the LLM window.
-- **Advanced Preprocessing**: Performs tokenization, spelling correction (`symspellpy`), and entity matching (`spacy`) on the input query.
-- **Factual Context Assembly**: Synthesizes clean context blocks with reference citations, checking for query-context relevance.
-- **Confidence Scoring & Guardrails**: Scores the confidence of the retrieved context and runs guardrails (`QueryGuard`) to prevent prompt injection and hallucinations.
-- **Interactive 3D Web Interface**: Immersive frontend featuring custom WebGL, Three.js scenes, interactive charts, and dashboard views.
+* **Hybrid Retrieval**: Combines semantic retrieval (dense vectors via FAISS and `sentence-transformers`) with lexical search (sparse keyword match via BM25).
+* **Reciprocal Rank Fusion (RRF)**: Merges sparse and dense search results using rank-based reciprocal scores.
+* **Cross-Encoder Reranking**: Re-orders fused candidates to ensure the most relevant contexts are prioritized in the LLM window.
+* **Advanced Preprocessing**: Performs tokenization, spelling correction (`symspellpy`), and entity matching (`spacy`) on the input query.
+* **Factual Context Assembly**: Synthesizes clean context blocks with reference citations, checking for query-context relevance.
+* **Confidence Scoring & Guardrails**: Scores the confidence of the retrieved context and runs guardrails (`QueryGuard`) to prevent prompt injection and hallucinations.
+* **Interactive 3D Web Interface**: Immersive frontend featuring custom WebGL, Three.js scenes, interactive charts, and dashboard views.
 
 ---
 
 ## Tech Stack
 
 ### Backend
-- **Core Framework**: FastAPI, Uvicorn, Pydantic (v2)
-- **Database & ORM**: PostgreSQL, SQLAlchemy, Psycopg2-binary
-- **Retrieval & NLP**: SpaCy, SymSpellPy, FAISS-cpu, Sentence-Transformers, NumPy, PyMuPDF (PyMuPDF / Fitz)
-- **Security**: python-dotenv, python-jose, bcrypt
+* **Core Framework**: FastAPI, Uvicorn, Pydantic (v2)
+* **Database & ORM**: PostgreSQL, SQLAlchemy, Psycopg2-binary
+* **Retrieval & NLP**: SpaCy, SymSpellPy, FAISS-cpu, Sentence-Transformers, NumPy, PyMuPDF (PyMuPDF / Fitz)
+* **Security**: python-dotenv, python-jose, bcrypt
 
 ### Frontend
-- **Framework**: React, Vite, TypeScript
-- **UI Components**: Radix UI, Tailwind CSS, Framer Motion, Lucide Icons, Recharts
-- **WebGL / 3D Graphics**: Three.js, React Three Fiber, React Three Drei, GSAP
+* **Framework**: React, Vite, TypeScript
+* **UI Components**: Radix UI, Tailwind CSS, Framer Motion, Lucide Icons, Recharts
+* **WebGL / 3D Graphics**: Three.js, React Three Fiber, React Three Drei, GSAP
 
 ---
 
@@ -91,7 +102,9 @@ flowchart TD
 
 ```
 .
+├── .github/                 # GitHub Actions workflows configuration
 ├── .gitignore               # Multi-environment file ignore configuration
+├── LICENSE                  # Standard MIT License
 ├── README.md                # Project documentation
 ├── requirements.txt         # Consolidated python dependencies
 ├── run_audit.py             # Diagnostic audit script for RAG retrieval evaluation
@@ -129,9 +142,9 @@ flowchart TD
 ## Installation & Configuration
 
 ### Prerequisites
-- Python 3.10+
-- PNPM (for frontend)
-- PostgreSQL (optional, fallback configurations exist)
+* Python 3.10+
+* PNPM (for frontend)
+* PostgreSQL (optional, fallback configurations exist)
 
 ### Environment Variables
 Copy the template configuration in the `backend/` directory to create a `.env` file:
@@ -174,17 +187,17 @@ pnpm --filter "@workspace/particle-site" run dev
 
 ## API Endpoints
 The backend exposes RESTful endpoints:
-- `POST /auth/register` - Registers a new user.
-- `POST /auth/login` - Authenticates and returns a JWT token.
-- `POST /chat/query` - Submits a query to the hybrid RAG pipeline.
-- `GET /metrics` - Performance indicators and query confidence diagnostics.
+* `POST /auth/register` - Registers a new user.
+* `POST /auth/login` - Authenticates and returns a JWT token.
+* `POST /chat/query` - Submits a query to the hybrid RAG pipeline.
+* `GET /metrics` - Performance indicators and query confidence diagnostics.
 
 ---
 
 ## Future Improvements
-- **Dynamic Chunking**: Adapt text splitting windows based on visual structure of PDFs.
-- **Reranker Optimization**: Transition from CPU-based Cross-Encoders to specialized inference APIs for lower latency.
-- **Database Scaling**: Implement PgVector to support vector operations natively in PostgreSQL.
+* **Dynamic Chunking**: Adapt text splitting windows based on visual structure of PDFs.
+* **Reranker Optimization**: Transition from CPU-based Cross-Encoders to specialized inference APIs for lower latency.
+* **Database Scaling**: Implement PgVector to support vector operations natively in PostgreSQL.
 
 ---
 
