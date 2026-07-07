@@ -16,6 +16,54 @@ from query_engine.context_assembler import classify_query_granularity
 logger = logging.getLogger(__name__)
 
 
+class LazyChunksByIdMap:
+    """
+    Lazy-loading proxy for chunks to maintain backward compatibility with chunks_by_id dictionary lookups.
+    Eliminates the scaling bottleneck of loading the entire corpus metadata into memory.
+    """
+    def __getitem__(self, chunk_id):
+        from backend.database.db import SessionLocal
+        from backend.auth.auth_models import Chunk, Document
+        db = SessionLocal()
+        try:
+            chunk = db.query(Chunk).filter(Chunk.chunk_id == chunk_id).first()
+            if chunk:
+                doc = db.query(Document).filter(Document.id == chunk.doc_id).first()
+                return {
+                    "chunk_id": chunk.chunk_id,
+                    "doc_id": chunk.doc_id,
+                    "text": chunk.text,
+                    "source_file": doc.source_file if doc else "",
+                    "page_number": chunk.page_number,
+                    "chunk_index": chunk.chunk_index,
+                    "metadata": {
+                        "section_title": chunk.section_title,
+                        "subsection_title": chunk.subsection_title,
+                        "procedure_id": chunk.procedure_id,
+                        "alternate_phrasings": chunk.alternate_phrasings or []
+                    }
+                }
+            raise KeyError(chunk_id)
+        finally:
+            db.close()
+            
+    def get(self, chunk_id, default=None):
+        try:
+            return self[chunk_id]
+        except KeyError:
+            return default
+            
+    def __contains__(self, chunk_id):
+        from backend.database.db import SessionLocal
+        from backend.auth.auth_models import Chunk
+        db = SessionLocal()
+        try:
+            exists = db.query(Chunk.chunk_id).filter(Chunk.chunk_id == chunk_id).first() is not None
+            return exists
+        finally:
+            db.close()
+
+
 class HybridRetriever(RetrievalEngine):
     """
     Hybrid Retriever that extends RetrievalEngine.
@@ -59,64 +107,37 @@ class HybridRetriever(RetrievalEngine):
         
         self.candidate_pool_size = 30
         
-        # Build lookup mapping for fast corpus O(1) searches
-        self.chunks_by_id = {c["chunk_id"]: c for c in self.keyword_ranker.chunks}
+        # Build lookup mapping using the database lazy-loading proxy
+        self.chunks_by_id = LazyChunksByIdMap()
         self.last_query_debug = {}
         logger.info("HybridRetriever initialized successfully with metadata mapping.")
 
     def _find_alternate_phrasing_matches(self, query: str) -> List[str]:
         """
-        Finds chunk IDs from the entire corpus that have alternate phrasings 
-        or main FAQ questions closely matching the query.
+        Finds chunk IDs from the database using PostgreSQL Full-Text Search
+        to match alternate phrasings or primary questions.
         """
-        import re
         if not query or not query.strip():
             return []
-        
-        # Normalize the query
-        norm_query = re.sub(r'[^a-z0-9\s]', '', query.lower()).strip()
-        query_tokens = set(norm_query.split())
-        if not query_tokens:
+
+        # Every modification includes this explanatory comment:
+        # "Replaced linear scan for alternate phrasings in Python with an indexed PostgreSQL Full-Text Search tsquery"
+        from sqlalchemy import text
+        from backend.database.db import SessionLocal
+
+        db = SessionLocal()
+        try:
+            sql = text(
+                "SELECT chunk_id FROM chunks "
+                "WHERE tsv_content @@ plainto_tsquery('english', :query)"
+            )
+            results = db.execute(sql, {"query": query}).all()
+            return [r[0] for r in results]
+        except Exception as e:
+            logger.error(f"Failed to query alternate phrasings from database: {e}")
             return []
-            
-        matching_chunk_ids = []
-        
-        for chunk in self.keyword_ranker.chunks:
-            alt_phrasings = list(chunk.get("metadata", {}).get("alternate_phrasings", []))
-            # Also include the main question from the text if it's an FAQ format
-            text = chunk.get("text", "")
-            if text.startswith("Question:"):
-                parts = text.split("\nAnswer:")
-                if parts:
-                    main_q = parts[0].replace("Question:", "").strip()
-                    alt_phrasings.append(main_q)
-                    
-            if not alt_phrasings:
-                continue
-                
-            for phrase in alt_phrasings:
-                norm_phrase = re.sub(r'[^a-z0-9\s]', '', phrase.lower()).strip()
-                if not norm_phrase:
-                    continue
-                
-                # 1. Exact match
-                if norm_query == norm_phrase:
-                    matching_chunk_ids.append(chunk["chunk_id"])
-                    break
-                
-                # 2. High token overlap
-                phrase_tokens = set(norm_phrase.split())
-                if query_tokens and phrase_tokens:
-                    intersection = query_tokens & phrase_tokens
-                    union = query_tokens | phrase_tokens
-                    jaccard = len(intersection) / len(union)
-                    overlap_coeff = len(intersection) / min(len(query_tokens), len(phrase_tokens))
-                    
-                    if jaccard >= 0.7 or (overlap_coeff >= 0.8 and len(intersection) >= 2):
-                        matching_chunk_ids.append(chunk["chunk_id"])
-                        break
-                        
-        return matching_chunk_ids
+        finally:
+            db.close()
 
     def _is_procedural_query(self, query: str) -> bool:
         """Helper to check if query seeks workflow instructions."""
@@ -382,55 +403,82 @@ class HybridRetriever(RetrievalEngine):
             sec_title = meta.get("section_title")
             proc_id = meta.get("procedure_id")
 
-            # Look for matching neighbors in the entire corpus
-            for corpus_chunk in self.keyword_ranker.chunks:
-                corp_id = corpus_chunk["chunk_id"]
-                if corp_id in expanded_cands_dict:
-                    continue
+            # Look for matching neighbors in PostgreSQL
+            # Every modification includes this explanatory comment:
+            # "Replaced memory-bloating linear scan in Python with a PostgreSQL indexed relational query to retrieve matching document neighbors and section chunks"
+            from backend.database.db import SessionLocal
+            from backend.auth.auth_models import Chunk
+            
+            db = SessionLocal()
+            try:
+                # Query chunks that share the same doc_id and match adjacency or structural metadata
+                clauses = []
+                if chunk_index is not None:
+                    clauses.append(Chunk.chunk_index == chunk_index - 1)
+                    clauses.append(Chunk.chunk_index == chunk_index + 1)
+                if sec_title:
+                    clauses.append(Chunk.section_title == sec_title)
+                if proc_id:
+                    clauses.append(Chunk.procedure_id == proc_id)
+                
+                if clauses:
+                    from sqlalchemy import or_
+                    db_chunks = (
+                        db.query(Chunk)
+                        .filter(Chunk.doc_id == doc_id, or_(*clauses))
+                        .all()
+                    )
+                else:
+                    db_chunks = []
+                
+                for corpus_chunk in db_chunks:
+                    corp_id = corpus_chunk.chunk_id
+                    if corp_id in expanded_cands_dict:
+                        continue
 
-                if corpus_chunk.get("doc_id") != doc_id:
-                    continue
+                    is_neighbor = False
+                    is_same_section = False
+                    is_same_proc = False
 
-                corp_index = corpus_chunk.get("chunk_index")
-                corp_meta = corpus_chunk.get("metadata", {})
-                corp_sec = corp_meta.get("section_title")
-                corp_proc = corp_meta.get("procedure_id")
+                    # Adjacency checks
+                    if corpus_chunk.chunk_index is not None and chunk_index is not None:
+                        if abs(corpus_chunk.chunk_index - chunk_index) == 1:
+                            is_neighbor = True
 
-                is_neighbor = False
-                is_same_section = False
-                is_same_proc = False
+                    if sec_title and corpus_chunk.section_title == sec_title:
+                        is_same_section = True
 
-                # Neighboring chunks (previous and next indices)
-                if corp_index is not None and chunk_index is not None:
-                    if abs(corp_index - chunk_index) == 1:
-                        is_neighbor = True
+                    if proc_id and corpus_chunk.procedure_id == proc_id:
+                        is_same_proc = True
 
-                # Same-section chunks
-                if sec_title and corp_sec == sec_title:
-                    is_same_section = True
+                    if is_neighbor or is_same_section or is_same_proc:
+                        discount = 0.95 if is_neighbor else 0.90
+                        score = parent_score * discount
 
-                # Same-procedure chunks
-                if proc_id and corp_proc == proc_id:
-                    is_same_proc = True
-
-                if is_neighbor or is_same_section or is_same_proc:
-                    # Assign discounted score
-                    discount = 0.95 if is_neighbor else 0.90
-                    score = parent_score * discount
-
-                    expanded_cand = {
-                        "chunk_id": corp_id,
-                        "text": corpus_chunk.get("text", ""),
-                        "score": score,
-                        "metadata": {
-                            "doc_id": doc_id,
-                            "source_file": source_file,
-                            "page_number": corpus_chunk.get("page_number"),
-                            "char_count": corp_meta.get("char_count", len(corpus_chunk.get("text", "")))
+                        corp_meta = {
+                            "section_title": corpus_chunk.section_title,
+                            "subsection_title": corpus_chunk.subsection_title,
+                            "procedure_id": corpus_chunk.procedure_id,
+                            "alternate_phrasings": corpus_chunk.alternate_phrasings or []
                         }
-                    }
-                    expanded_cand["metadata"].update(corp_meta)
-                    expanded_cands_dict[corp_id] = expanded_cand
+
+                        expanded_cand = {
+                            "chunk_id": corp_id,
+                            "text": corpus_chunk.text,
+                            "score": score,
+                            "metadata": {
+                                "doc_id": doc_id,
+                                "source_file": source_file,
+                                "page_number": corpus_chunk.page_number,
+                                "char_count": len(corpus_chunk.text)
+                            }
+                        }
+                        expanded_cand["metadata"].update(corp_meta)
+                        expanded_cands_dict[corp_id] = expanded_cand
+            except Exception as dberr:
+                logger.error(f"Error querying neighboring chunks from PostgreSQL: {dberr}")
+            finally:
+                db.close()
 
         expanded_candidates = list(expanded_cands_dict.values())
 

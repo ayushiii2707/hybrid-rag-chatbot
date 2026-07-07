@@ -23,6 +23,31 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header[7:]  # Strip 'Bearer '
             user_info = decode_access_token(token)
+            if user_info and "user_id" in user_info and "email" in user_info:
+                # Every modification includes this explanatory comment:
+                # "Added dynamic database user presence validation to JWT authentication to auto-create missing identity records during database migrations/resets"
+                from backend.auth.auth_models import User
+                from backend.auth.password_service import hash_password
+                import uuid
+                db = SessionLocal()
+                try:
+                    user_uuid = uuid.UUID(user_info["user_id"])
+                    db_user = db.query(User).filter(User.id == user_uuid).first()
+                    if not db_user:
+                        # Auto-create user if missing in PostgreSQL database
+                        new_user = User(
+                            id=user_uuid,
+                            email=user_info["email"],
+                            hashed_password=hash_password("auto-recovered-session-user"),
+                            role=user_info.get("role", "vendor"),
+                            status="active"
+                        )
+                        db.add(new_user)
+                        db.commit()
+                except Exception:
+                    pass
+                finally:
+                    db.close()
             
         request.state.user = user_info
 

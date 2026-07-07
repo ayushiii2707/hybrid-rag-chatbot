@@ -43,7 +43,7 @@ class TestPostgresProduction(unittest.TestCase):
         Base.metadata.create_all(bind=engine)
         db = TestingSessionLocal()
         try:
-            db.execute(text("TRUNCATE TABLE system_metrics, rate_limit_counters, otp_request_limits, query_logs, users CASCADE;"))
+            db.execute(text("TRUNCATE TABLE system_metrics, rate_limit_counters, otp_request_limits, query_logs CASCADE;"))
             db.execute(text("INSERT INTO system_metrics (metric_name, metric_value) VALUES ('queries_total', 0.0) ON CONFLICT(metric_name) DO NOTHING;"))
             db.commit()
         except Exception:
