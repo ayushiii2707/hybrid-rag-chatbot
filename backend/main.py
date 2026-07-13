@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.join(BACKEND_DIR, "auth"))
 
 from dotenv import load_dotenv
 dotenv_path = os.path.join(BACKEND_DIR, ".env")
-load_dotenv(dotenv_path, override=True)
+load_dotenv(dotenv_path)
 from sqlalchemy import text
 
 from backend.database.db import engine, Base, get_db, SessionLocal

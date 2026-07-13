@@ -227,8 +227,6 @@ class HybridRetriever(RetrievalEngine):
             chunk_obj = self.chunks_by_id.get(cand["chunk_id"])
             if chunk_obj:
                 cand["metadata"].update(chunk_obj.get("metadata", {}))
-                cand["metadata"]["source_file"] = chunk_obj.get("source_file", "")
-                cand["metadata"]["page_number"] = chunk_obj.get("page_number", 1)
                 # Map FAQ virtual chunk page_number to original chunk page_number
                 if "_faq_" in cand["chunk_id"]:
                     doc_id = chunk_obj.get("doc_id")
@@ -374,8 +372,6 @@ class HybridRetriever(RetrievalEngine):
             chunk_obj = self.chunks_by_id.get(cand["chunk_id"])
             if chunk_obj:
                 cand["metadata"].update(chunk_obj.get("metadata", {}))
-                cand["metadata"]["source_file"] = chunk_obj.get("source_file", "")
-                cand["metadata"]["page_number"] = chunk_obj.get("page_number", 1)
                 # Map FAQ virtual chunk page_number to original chunk page_number
                 if "_faq_" in cand["chunk_id"]:
                     doc_id = chunk_obj.get("doc_id")

@@ -190,21 +190,16 @@ class QueryOrchestrator:
         # Remove standalone "Answer:" or "A:" prefixes from the start of lines
         cleaned = _re.sub(r"(?i)^\s*(?:Answer|A):\s*", "", cleaned, flags=_re.M)
 
-        # Remove trailing clause markers like " 5.2.", " 6.4", " 7.3." from sentences or line ends
-        cleaned = _re.sub(r"\s+\d+\.\d+(?:\.\d+)*\.?(?=\s|$|\.)", "", cleaned)
-
         # Deduplicate repeated lines using normalized keys
         seen = set()
         deduped_lines = []
         for line in cleaned.splitlines():
             key = line.strip()
-            # Normalize key by stripping leading whitespace, nested list/clause prefixes, and case
-            norm_key = _re.sub(r"^\s*(?:\d+(?:\.\d+)*[\.\)]|[-*•➕])\s*", "", key).lower()
+            # Normalize key by stripping leading whitespace, list/number prefixes, and case
+            norm_key = _re.sub(r"^\s*(?:\d+[\.\)]|[-*•➕])\s*", "", key).lower()
             if key and norm_key not in seen:
                 seen.add(norm_key)
-                # Clean the line itself from leading clause prefix if it's there
-                cleaned_line = _re.sub(r"^\s*(?:\d+(?:\.\d+)*[\.\)]|[-*•➕])\s*", "", line)
-                deduped_lines.append(cleaned_line)
+                deduped_lines.append(line)
             elif not key:
                 deduped_lines.append(line)  # preserve blank separators
         cleaned = "\n".join(deduped_lines).strip()
@@ -212,7 +207,7 @@ class QueryOrchestrator:
         # If the output consists of only a single line/sentence, strip any leading list/number prefix
         non_empty_lines = [l for l in cleaned.splitlines() if l.strip()]
         if len(non_empty_lines) <= 1:
-            cleaned = _re.sub(r"^\s*(?:\d+(?:\.\d+)*[\.\)]|[-*•➕])\s*", "", cleaned)
+            cleaned = _re.sub(r"^\s*(?:\d+[\.\)]|[-*•➕])\s*", "", cleaned)
 
         # Ensure complete answer for registration-clicking queries (including synonyms)
         if query:
