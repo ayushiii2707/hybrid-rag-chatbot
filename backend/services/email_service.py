@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 # Load environment variables from backend/.env
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 dotenv_path = os.path.join(BACKEND_DIR, ".env")
-load_dotenv(dotenv_path)
+load_dotenv(dotenv_path, override=True)
 
 # Read SMTP configuration from environment variables
 SMTP_EMAIL = os.getenv("SMTP_EMAIL").strip() if os.getenv("SMTP_EMAIL") else None
@@ -17,8 +17,8 @@ SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 
 # Read Environment settings
-ENVIRONMENT = os.getenv("ENVIRONMENT", "production").strip().lower()
-DEV_OTP_ENABLED = os.getenv("DEV_OTP_ENABLED", "false").strip().lower() == "true"
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").strip().lower()
+DEV_OTP_ENABLED = os.getenv("DEV_OTP_ENABLED", "true").strip().lower() == "true"
 
 def send_otp_email(recipient_email: str, otp: str) -> None:
     """

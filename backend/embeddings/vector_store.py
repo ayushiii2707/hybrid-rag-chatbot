@@ -131,8 +131,9 @@ class FAISSVectorStore(BaseVectorStore):
 
         start_vector_id = self.index.ntotal
 
-        # 4. Add to FAISS index
-        self.index.add(new_embeddings_np)
+        # 4. Add to FAISS index (sequentially to prevent IndexHNSWFlat graph-building segfaults on Apple Silicon / macOS)
+        for i in range(len(new_embeddings_np)):
+            self.index.add(new_embeddings_np[i : i + 1])
 
         # 5. Save to database using SQLAlchemy
         # Every modification includes this explanatory comment:

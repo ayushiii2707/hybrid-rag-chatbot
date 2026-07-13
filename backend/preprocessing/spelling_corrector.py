@@ -267,21 +267,38 @@ class SpellingCorrector:
                 if is_upper or (is_title and not is_standard) or not is_standard:
                     dest_protected.add(w_lower)
 
-        # Load chunks from retrieval_engine or metadata.json
+        # Load chunks from database or retrieval_engine
         chunks = []
         if retrieval_engine and hasattr(retrieval_engine, "keyword_ranker") and hasattr(retrieval_engine.keyword_ranker, "chunks"):
             chunks = retrieval_engine.keyword_ranker.chunks
         else:
-            backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            metadata_path = os.path.join(backend_dir, "embeddings", "metadata.json")
-            if os.path.exists(metadata_path):
+            try:
+                from backend.database.db import SessionLocal
+                from backend.auth.auth_models import Chunk, Document
+                db = SessionLocal()
                 try:
-                    import json
-                    with open(metadata_path, "r", encoding="utf-8") as f:
-                        chunks = json.load(f)
-                    logger.info(f"[SpellingCorrector] Loaded {len(chunks)} chunks from metadata.json for vocabulary discovery.")
-                except Exception as e:
-                    logger.warning(f"Could not load metadata.json directly: {e}")
+                    db_chunks = db.query(Chunk).all()
+                    for c in db_chunks:
+                        doc = db.query(Document).filter(Document.id == c.doc_id).first()
+                        chunks.append({
+                            "chunk_id": c.chunk_id,
+                            "doc_id": c.doc_id,
+                            "text": c.text,
+                            "source_file": doc.source_file if doc else "",
+                            "page_number": c.page_number,
+                            "chunk_index": c.chunk_index,
+                            "metadata": {
+                                "section_title": c.section_title,
+                                "subsection_title": c.subsection_title,
+                                "procedure_id": c.procedure_id,
+                                "alternate_phrasings": c.alternate_phrasings or []
+                            }
+                        })
+                    logger.info(f"[SpellingCorrector] Loaded {len(chunks)} chunks from database for vocabulary discovery.")
+                finally:
+                    db.close()
+            except Exception as e:
+                logger.warning(f"Could not load chunks from database directly: {e}")
 
         # TIER 1: Section Titles, Subsection Titles, Metadata Fields
         for chunk in chunks:

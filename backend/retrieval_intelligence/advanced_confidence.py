@@ -193,6 +193,17 @@ class AdvancedConfidenceScorer:
             if any(term in query_lower for term in ["fssai", "active", "status", "link"]):
                 score += 0.25
 
+        # 4. Purpose / Definition Alignment Boost
+        # Boost high-level definitions/descriptions when queries ask "what is/does X" or "purpose"
+        purpose_query_terms = ["what is", "what does", "purpose", "define", "definition", "meaning", "about", "refer to"]
+        if any(term in query_lower for term in purpose_query_terms):
+            definition_chunk_patterns = ["refers to", "refer to", "is defined as", "means", "is used to", "allows", "purpose of", "intended for", "intended to"]
+            if any(pat in chunk_text_lower for pat in definition_chunk_patterns):
+                # Avoid boosting specific sub-steps when looking for high-level definition
+                is_sub_step = any(step_pat in chunk_text_lower for step_pat in ["step 3:", "step 4:", "step 5:", "step 6:", "step 7:", "step 8:", "step 9:", "step 10:", "step 11:"])
+                if not is_sub_step:
+                    score += 0.20
+
         return max(0.0, min(1.0, score))
 
     # ------------------------------------------------------------------
@@ -372,6 +383,26 @@ class AdvancedConfidenceScorer:
 
         return 0.0
 
+    def _procedural_purpose_mismatch_penalty(self, query: str, chunk_text: str) -> float:
+        """
+        Applies a negative penalty (-0.15) to specific procedural action steps 
+        when the query intent is asking for high-level overview/purpose/definition.
+        """
+        query_lower = query.lower()
+        chunk_text_lower = chunk_text.lower()
+        
+        purpose_queries = ["what does", "what is", "purpose of", "scope of", "intended for", "what is the purpose", "what is this for"]
+        is_purpose_query = any(term in query_lower for term in purpose_queries)
+        
+        if is_purpose_query:
+            is_step = any(pat in chunk_text_lower for pat in ["step 1:", "step 2:", "step 3:", "step 4:", "step 5:", "step 6:", "step 7:", "step 8:", "step 9:", "step 10:", "step 11:"])
+            has_action_verbs = any(verb in chunk_text_lower for verb in ["click on", "select from", "choose the", "enter the", "fill the", "type the", "dropdown menu", "drop-down menu"])
+            
+            if is_step or has_action_verbs:
+                logger.info("Applying procedural purpose mismatch penalty (-0.15) to step instruction chunk.")
+                return -0.15
+        return 0.0
+
     # ------------------------------------------------------------------
     # Main Scoring Entry Point
     # ------------------------------------------------------------------
@@ -458,13 +489,16 @@ class AdvancedConfidenceScorer:
             answer_type_score = 1.0
             mismatch_penalty = 0.0
         else:
+            mismatch_penalty = 0.0
             if semantic_score >= self.high_confidence_threshold:
                 alignment = max(0.90, alignment)
                 if answer_type_score == 0.0:
                     answer_type_score = 0.50
-                mismatch_penalty = 0.0
             else:
-                mismatch_penalty = self._intent_mismatch_penalty(query, chunk_text)
+                mismatch_penalty += self._intent_mismatch_penalty(query, chunk_text)
+            
+            # Procedural-purpose mismatch penalty applies regardless of semantic threshold
+            mismatch_penalty += self._procedural_purpose_mismatch_penalty(query, chunk_text)
 
         # 3. Weighted linear combination using normalised weights
         ws = self.weights.get("semantic", 0.55)
