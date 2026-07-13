@@ -37,6 +37,8 @@ class LazyChunksByIdMap:
                     "page_number": chunk.page_number,
                     "chunk_index": chunk.chunk_index,
                     "metadata": {
+                        "source_file": doc.source_file if doc else "",
+                        "page_number": chunk.page_number,
                         "section_title": chunk.section_title,
                         "subsection_title": chunk.subsection_title,
                         "procedure_id": chunk.procedure_id,
@@ -172,11 +174,15 @@ class HybridRetriever(RetrievalEngine):
                 if not any(c["chunk_id"] == chunk_id for c in candidates):
                     chunk_obj = self.chunks_by_id.get(chunk_id)
                     if chunk_obj:
+                        chunk_meta = dict(chunk_obj.get("metadata", {}))
+                        # Ensure source_file and page_number are always in metadata
+                        chunk_meta.setdefault("source_file", chunk_obj.get("source_file", ""))
+                        chunk_meta.setdefault("page_number", chunk_obj.get("page_number", 1))
                         injected_cand = {
                             "chunk_id": chunk_id,
                             "text": chunk_obj.get("text", ""),
                             "score": 0.85,
-                            "metadata": dict(chunk_obj.get("metadata", {}))
+                            "metadata": chunk_meta
                         }
                         candidates.append(injected_cand)
 

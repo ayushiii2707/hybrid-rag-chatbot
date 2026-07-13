@@ -42,10 +42,10 @@ class EmbeddingGenerator:
             logger.info("Configuration file not found. Using default embedding generator settings.")
 
         # 2. Initialize SentenceTransformer
-        logger.info(f"Initializing local embedding model '{self.model_name}'...")
+        logger.info(f"Initializing local embedding model '{self.model_name}' on CPU...")
         try:
-            self.model = SentenceTransformer(self.model_name)
-            logger.info(f"Local embedding model '{self.model_name}' loaded successfully.")
+            self.model = SentenceTransformer(self.model_name, device="cpu")
+            logger.info(f"Local embedding model '{self.model_name}' loaded successfully on CPU.")
         except Exception as e:
             logger.critical(f"Failed to load sentence-transformers model '{self.model_name}': {e}")
             raise RuntimeError(f"Failed to load model '{self.model_name}'") from e

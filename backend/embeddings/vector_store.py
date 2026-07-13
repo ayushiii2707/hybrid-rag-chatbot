@@ -7,7 +7,7 @@ import numpy as np
 import faiss
 from backend.database.db import SessionLocal
 from backend.auth.auth_models import Document, Chunk, VectorMap
-from sqlalchemy import func
+from sqlalchemy import func, text
 
 logger = logging.getLogger(__name__)
 
@@ -153,12 +153,13 @@ class FAISSVectorStore(BaseVectorStore):
                 alt_phrasings = meta.get("metadata", {}).get("alternate_phrasings", [])
                 
                 # Construct combined content for Full-Text Search tsvector
-                text = meta.get("text", "")
-                full_searchable_text = text
+                chunk_text = meta.get("text", "")
+                full_searchable_text = chunk_text
                 if alt_phrasings:
                     full_searchable_text += " " + " ".join(alt_phrasings)
 
-                # Ensure Chunk exists
+                # Ensure Chunk exists — insert WITHOUT tsv_content to avoid Apple Silicon
+                # psycopg2 semaphore crash from SQLAlchemy func.to_tsvector() in constructor.
                 db_chunk = db.query(Chunk).filter(Chunk.chunk_id == meta["chunk_id"]).first()
                 if not db_chunk:
                     db_chunk = Chunk(
@@ -166,14 +167,23 @@ class FAISSVectorStore(BaseVectorStore):
                         doc_id=doc_id,
                         page_number=meta.get("page_number", 1),
                         chunk_index=meta.get("chunk_index", 0),
-                        text=text,
+                        text=chunk_text,
                         section_title=meta.get("metadata", {}).get("section_title"),
                         subsection_title=meta.get("metadata", {}).get("subsection_title"),
                         procedure_id=meta.get("metadata", {}).get("procedure_id"),
                         alternate_phrasings=alt_phrasings,
-                        tsv_content=func.to_tsvector("english", full_searchable_text)
+                        # tsv_content intentionally omitted — updated via raw SQL below
                     )
                     db.add(db_chunk)
+                    db.flush()  # flush so the row exists before the UPDATE
+                    # Now update tsv_content via raw SQL so PostgreSQL computes it server-side
+                    db.execute(
+                        text(
+                            "UPDATE chunks SET tsv_content = to_tsvector('english', :content) "
+                            "WHERE chunk_id = :cid"
+                        ),
+                        {"content": full_searchable_text, "cid": meta["chunk_id"]}
+                    )
 
                 # Create Vector ID mapping
                 vector_id = start_vector_id + idx
@@ -183,7 +193,8 @@ class FAISSVectorStore(BaseVectorStore):
                 # Maintain local duplicate checking cache
                 self.indexed_chunk_ids.add(meta["chunk_id"])
 
-            db.commit()
+                # Commit each chunk individually to prevent bulk transaction crashes
+                db.commit()
         except Exception as e:
             db.rollback()
             logger.error(f"Failed to save metadata to PostgreSQL: {e}")

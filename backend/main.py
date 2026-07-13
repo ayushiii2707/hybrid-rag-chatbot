@@ -1,5 +1,12 @@
 import os
 import sys
+
+# ── Apple Silicon Stability Fix ───────────────────────────────────────────────
+# Prevent OpenMP/tokenizer multiprocessing semaphore conflicts that cause
+# SIGSEGV (exit 139) on macOS Apple Silicon when FAISS + SentenceTransformers
+# are used together. Must be set before any numpy/faiss/torch imports.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 from contextlib import asynccontextmanager
 from typing import Optional, Dict, Any
 

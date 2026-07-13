@@ -75,3 +75,7 @@ poetry.lock
 *.local
 .replit
 
+
+# FAISS binary index (regenerated from DB on startup)
+backend/embeddings/faiss_index.bin
+backend/embeddings/metadata.json

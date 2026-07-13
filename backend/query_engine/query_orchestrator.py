@@ -574,8 +574,8 @@ class QueryOrchestrator:
             excerpt_text = excerpt_res["excerpt"]
 
             evaluated_matches.append({
-                "source_file": cand["metadata"]["source_file"],
-                "page_number": cand["metadata"]["page_number"],
+                "source_file": cand["metadata"].get("source_file", cand.get("source_file", "")),
+                "page_number": cand["metadata"].get("page_number", cand.get("page_number", 1)),
                 "chunk_id": cand["chunk_id"],
                 "score": cand["score"],  # Already the composite confidence score
                 "raw_similarity": cand.get("raw_similarity", cand["score"]),

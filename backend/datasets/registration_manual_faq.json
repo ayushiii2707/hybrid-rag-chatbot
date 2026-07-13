@@ -1,0 +1,400 @@
+{
+  "metadata": {
+    "source_document": "Merchandise supplier registration manual v.01 2 (3).pdf",
+    "source_location": "SharePoint - MDMInternal / RRSR and NVR Portal",
+    "process": "New Merchandise (Trading) Vendor Onboarding",
+    "portal_url": "https://supplierregistration.ril.com/",
+    "total_intents": 28,
+    "language": "en",
+    "version": "1.0"
+  },
+  "categories": [
+    "general",
+    "pan_details",
+    "udyam_msme",
+    "office_address",
+    "contact_details",
+    "product_category",
+    "fssai",
+    "terms_and_submission",
+    "request_id_and_status",
+    "approval_and_login"
+  ],
+  "faqs": [
+    {
+      "intent": "portal_purpose",
+      "category": "general",
+      "question": "What is this portal for?",
+      "alternate_phrasings": [
+        "what does the supplier registration portal do",
+        "purpose of RRSR portal",
+        "why use supplier registration portal",
+        "what is RRSR"
+      ],
+      "answer": "The Supplier Registration Portal is used for onboarding new Merchandise (Trading) Vendors with Reliance Retail.",
+      "entities": []
+    },
+    {
+      "intent": "portal_link",
+      "category": "general",
+      "question": "What is the link to the supplier registration portal?",
+      "alternate_phrasings": [
+        "share portal URL",
+        "where do I register as a supplier",
+        "supplier registration website",
+        "RRSR portal link"
+      ],
+      "answer": "You can access the portal at https://supplierregistration.ril.com/",
+      "entities": [{"type": "url", "value": "https://supplierregistration.ril.com/"}]
+    },
+    {
+      "intent": "start_new_registration",
+      "category": "general",
+      "question": "How do I start a new supplier registration?",
+      "alternate_phrasings": [
+        "how to begin registration",
+        "where to click for new registration",
+        "start onboarding as a vendor",
+        "first step of registration"
+      ],
+      "answer": "Visit https://supplierregistration.ril.com/ and click the 'New Supplier Registration' button on the right side panel of the page.",
+      "entities": [{"type": "step", "value": "Step 1"}]
+    },
+    {
+      "intent": "registration_steps_overview",
+      "category": "general",
+      "question": "How many steps are there in the registration process?",
+      "alternate_phrasings": [
+        "list all registration steps",
+        "what is the registration flow",
+        "stages of supplier onboarding",
+        "process overview"
+      ],
+      "answer": "There are 7 steps: (1) Visit Portal Page, (2) Supplier PAN Details, (3) Office Address Details, (4) Contact Details, (5) Select Product Category and Format, (6) Accept Terms and Conditions, and (7) Request ID Generation.",
+      "entities": [{"type": "count", "value": "7"}]
+    },
+    {
+      "intent": "pan_validation_rules",
+      "category": "pan_details",
+      "question": "What are the validation rules for PAN?",
+      "alternate_phrasings": [
+        "PAN format requirements",
+        "how should PAN look",
+        "PAN structure rules",
+        "valid PAN criteria"
+      ],
+      "answer": "Your PAN must follow these rules: (1) Must be exactly 10 characters long, (2) First 5 characters must be alphabets, (3) 4th character must be one of C, P, H, F, A, T, B, L, J, or G, (4) 6th to 9th characters must be numeric, (5) Last character must be an alphabet.",
+      "entities": [
+        {"type": "length", "value": "10"},
+        {"type": "allowed_4th_char", "value": "C, P, H, F, A, T, B, L, J, G"}
+      ]
+    },
+    {
+      "intent": "pan_4th_character_meaning",
+      "category": "pan_details",
+      "question": "What does the 4th character of my PAN signify?",
+      "alternate_phrasings": [
+        "what does P in PAN mean",
+        "what does C in PAN mean",
+        "entity type from PAN",
+        "PAN 4th letter meaning"
+      ],
+      "answer": "The 4th character indicates the entity type: C - Company, P - Individual, H - Hindu Undivided Family (HUF), F - Firm or Limited Liability Partnership, A - Association of Persons (AOP), T - Trust, B - Body of Individuals (BOI), L - Local Authority, J - Artificial Juridical Person, G - Government Agency.",
+      "entities": [
+        {"type": "code_map", "value": {"C": "Company", "P": "Individual", "H": "HUF", "F": "Firm/LLP", "A": "AOP", "T": "Trust", "B": "BOI", "L": "Local Authority", "J": "Artificial Juridical Person", "G": "Government Agency"}}
+      ]
+    },
+    {
+      "intent": "title_field_blank",
+      "category": "pan_details",
+      "question": "The Title field is blank after entering my PAN. What should I do?",
+      "alternate_phrasings": [
+        "title not auto-populated",
+        "title field empty",
+        "title not showing after PAN",
+        "PAN entered but title is missing"
+      ],
+      "answer": "The Title field is auto-populated from the 4th character of your PAN. If it doesn't populate, remove the PAN and retype it.",
+      "entities": []
+    },
+    {
+      "intent": "declare_pan_name",
+      "category": "pan_details",
+      "question": "How should I declare my PAN name?",
+      "alternate_phrasings": [
+        "PAN name format",
+        "how to write name as per PAN",
+        "PAN name validation Y flag",
+        "name on PAN"
+      ],
+      "answer": "Declare the PAN name exactly as per your PAN card. Ensure the 'Y' flag is displayed in the PAN name validation.",
+      "entities": [{"type": "validation_flag", "value": "Y"}]
+    },
+    {
+      "intent": "pan_upload_format",
+      "category": "pan_details",
+      "question": "What file format is accepted for the PAN document upload?",
+      "alternate_phrasings": [
+        "PAN document file type",
+        "can I upload JPG for PAN",
+        "PDF allowed for PAN",
+        "PAN upload format"
+      ],
+      "answer": "Upload a scanned copy or E-PAN file in PDF or JPG format.",
+      "entities": [{"type": "file_format", "value": ["PDF", "JPG"]}]
+    },
+    {
+      "intent": "proprietorship_documents",
+      "category": "pan_details",
+      "question": "I am a Proprietorship Firm. What additional document do I need?",
+      "alternate_phrasings": [
+        "proof of proprietorship",
+        "proprietor PAN mismatch documents",
+        "documents for proprietorship firm",
+        "PAN with P 4th character what documents"
+      ],
+      "answer": "If your 4th PAN character is 'P' and your Vendor name/Bank account name differs from the Proprietor's name, you must merge a Proof of Proprietorship document with your PAN copy. Accepted documents are: (1) Shop & Establishment Certificate, (2) Confirmation letter from a scheduled Bank stating proprietorship, (3) Service Tax Registration Certificate, (4) IEC (Import Export Certificate), (5) Trade License, (6) Any Govt./Local authority certificate showing both firm and proprietor name, (7) UDYAM Registration Certificate, (8) GST Certificate.",
+      "entities": [
+        {"type": "trigger_condition", "value": "PAN 4th char = P"},
+        {"type": "document_list_count", "value": "8"}
+      ]
+    },
+    {
+      "intent": "rtgs_mandate_validity",
+      "category": "pan_details",
+      "question": "Is the RTGS mandate form valid as proof of proprietorship?",
+      "alternate_phrasings": [
+        "can I use RTGS form as proof",
+        "RTGS mandate accepted",
+        "is RTGS form valid"
+      ],
+      "answer": "No. The RTGS mandate form is not accepted. Banks only validate signature and account number on it and do not confirm other details. Please use one of the other accepted proof documents.",
+      "entities": []
+    },
+    {
+      "intent": "farmer_declaration",
+      "category": "pan_details",
+      "question": "I am a farmer. How do I declare this?",
+      "alternate_phrasings": [
+        "register as a farmer",
+        "farmer option in portal",
+        "supplier is farmer",
+        "farmer supporting document"
+      ],
+      "answer": "Click 'Yes' on the farmer option and attach a supporting document to establish your status as a farmer.",
+      "entities": []
+    },
+    {
+      "intent": "udyam_format",
+      "category": "udyam_msme",
+      "question": "What is the format for the UDYAM (MSME) number?",
+      "alternate_phrasings": [
+        "MSME number format",
+        "UDYAM number structure",
+        "how to enter UDYAM",
+        "UDYAM validation rules"
+      ],
+      "answer": "The UDYAM number must follow this format: UDYAM-XX-XX-XXXXXXX. It is 19 characters long. First 5 characters: 'UDYAM'. Next 2: alphabetic letters (A-Z) for state. Next 2: numeric digits for district code. Last 7: numeric digits unique to the enterprise. Each part is separated by a hyphen.",
+      "entities": [
+        {"type": "format", "value": "UDYAM-XX-XX-XXXXXXX"},
+        {"type": "length", "value": "19"}
+      ]
+    },
+    {
+      "intent": "udyam_date_of_issue",
+      "category": "udyam_msme",
+      "question": "Where do I find the Date of Issue for UDYAM?",
+      "alternate_phrasings": [
+        "UDYAM date of issue field",
+        "which date to enter for UDYAM",
+        "UDYAM registration date"
+      ],
+      "answer": "Refer to the 'Date of UDYAM Registration' section on your UDYAM (MSME) certificate and select the matching date from the calendar in the 'Date of Issue' field.",
+      "entities": []
+    },
+    {
+      "intent": "udyam_validity_year",
+      "category": "udyam_msme",
+      "question": "What should I enter in the Validity Year From and To fields?",
+      "alternate_phrasings": [
+        "UDYAM validity year",
+        "UDYAM from to dates",
+        "MSME validity period",
+        "to field UDYAM 9999"
+      ],
+      "answer": "In the 'From' field, enter the latest classification date from the Enterprise Type section of your UDYAM certificate. In the 'To' field, enter 9999.",
+      "entities": [{"type": "fixed_value", "field": "To", "value": "9999"}]
+    },
+    {
+      "intent": "udyam_verification",
+      "category": "udyam_msme",
+      "question": "How can I verify my UDYAM number?",
+      "alternate_phrasings": [
+        "check UDYAM status",
+        "verify MSME number",
+        "UDYAM verification link"
+      ],
+      "answer": "You can verify it at https://udyamregistration.gov.in/Udyam_Verify.aspx",
+      "entities": [{"type": "url", "value": "https://udyamregistration.gov.in/Udyam_Verify.aspx"}]
+    },
+    {
+      "intent": "udyam_upload_format",
+      "category": "udyam_msme",
+      "question": "In what format should I upload the UDYAM certificate?",
+      "alternate_phrasings": [
+        "UDYAM certificate file type",
+        "MSME upload format",
+        "PDF or JPG for UDYAM"
+      ],
+      "answer": "Upload the scanned copy of the UDYAM (MSME) certificate in PDF or JPG format.",
+      "entities": [{"type": "file_format", "value": ["PDF", "JPG"]}]
+    },
+    {
+      "intent": "office_address",
+      "category": "office_address",
+      "question": "What address should I provide in the Office Address section?",
+      "alternate_phrasings": [
+        "which address to enter",
+        "office address field",
+        "registered office address",
+        "supplier address details"
+      ],
+      "answer": "Provide your Supplier Address (Registered Office Address) details and click Next.",
+      "entities": [{"type": "step", "value": "Step 3"}]
+    },
+    {
+      "intent": "mobile_otp_verification",
+      "category": "contact_details",
+      "question": "How do I verify my mobile number?",
+      "alternate_phrasings": [
+        "OTP verification process",
+        "mobile number OTP",
+        "get OTP button",
+        "verify phone number"
+      ],
+      "answer": "Enter your mobile number and click the 'Get OTP' button. You will receive an OTP for verification.",
+      "entities": [{"type": "step", "value": "Step 4"}]
+    },
+    {
+      "intent": "reliance_employee_contact",
+      "category": "contact_details",
+      "question": "Can I use a Reliance employee's contact details?",
+      "alternate_phrasings": [
+        "use Reliance employee number",
+        "is Reliance employee contact allowed",
+        "Reliance contact in registration"
+      ],
+      "answer": "No. Reliance employee contact details are strictly prohibited in the registration.",
+      "entities": []
+    },
+    {
+      "intent": "select_product_category",
+      "category": "product_category",
+      "question": "How do I select the correct product category and format?",
+      "alternate_phrasings": [
+        "which category to choose",
+        "how to pick product category",
+        "category and format selection",
+        "help with category selection"
+      ],
+      "answer": "Choose the appropriate category and format from the dropdowns. Please seek guidance from the Reliance Buyer you are coordinating with to ensure the correct selection.",
+      "entities": [{"type": "step", "value": "Step 5"}]
+    },
+    {
+      "intent": "multiple_categories",
+      "category": "product_category",
+      "question": "Can I select multiple product categories?",
+      "alternate_phrasings": [
+        "add more than one category",
+        "multiple formats allowed",
+        "add multiple product categories"
+      ],
+      "answer": "Yes. After selecting a category and format, click 'Add Product Category' on the right side. You may add more than one category and format.",
+      "entities": []
+    },
+    {
+      "intent": "fssai_requirement",
+      "category": "fssai",
+      "question": "When are FSSAI details required?",
+      "alternate_phrasings": [
+        "FSSAI license needed",
+        "do I need FSSAI",
+        "multiple FSSAI licenses",
+        "FSSAI mandatory"
+      ],
+      "answer": "The system will prompt for FSSAI details if applicable based on your selected category. You can also add multiple FSSAI license entries.",
+      "entities": []
+    },
+    {
+      "intent": "complete_registration",
+      "category": "terms_and_submission",
+      "question": "How do I complete the registration?",
+      "alternate_phrasings": [
+        "submit registration",
+        "accept terms and conditions",
+        "final submit button",
+        "register button"
+      ],
+      "answer": "Read the terms and conditions, check the 'I accept terms and conditions' box, and click the 'Register' button.",
+      "entities": [{"type": "step", "value": "Step 6"}]
+    },
+    {
+      "intent": "post_submission_flow",
+      "category": "request_id_and_status",
+      "question": "What happens after I submit the registration?",
+      "alternate_phrasings": [
+        "what after submission",
+        "next steps after register",
+        "request ID generation",
+        "post registration email"
+      ],
+      "answer": "A Request ID will be generated and assigned for future reference. A notification email will also be sent to your registered email and to the Business team for further processing.",
+      "entities": [{"type": "step", "value": "Step 7"}]
+    },
+    {
+      "intent": "check_registration_status",
+      "category": "request_id_and_status",
+      "question": "How can I check my registration status?",
+      "alternate_phrasings": [
+        "track my registration",
+        "registration status check",
+        "where is my application",
+        "business approval status"
+      ],
+      "answer": "Click on the 'Check Registration Status' option on the portal, enter your PAN in the search window, and click 'Search' to view your business approval status.",
+      "entities": []
+    },
+    {
+      "intent": "check_status_before_reregistering",
+      "category": "request_id_and_status",
+      "question": "Should I check my status before re-registering?",
+      "alternate_phrasings": [
+        "register again",
+        "duplicate registration",
+        "fresh registration if pending",
+        "can I re-register"
+      ],
+      "answer": "Yes. Always check your registration status through the 'Check Registration Status' option before initiating a fresh registration.",
+      "entities": []
+    },
+    {
+      "intent": "post_approval_login",
+      "category": "approval_and_login",
+      "question": "What happens once my request is approved?",
+      "alternate_phrasings": [
+        "after approval steps",
+        "login credentials",
+        "activation email",
+        "set password supplier portal"
+      ],
+      "answer": "Once approved by the Category and Commercial Managers, login credentials will be sent to your registered email via an auto-generated email. Click the link in the Activation Email, set your password, and submit.",
+      "entities": [
+        {"type": "approver", "value": ["Category Manager", "Commercial Manager"]}
+      ]
+    }
+  ],
+  "fallback": {
+    "intent": "fallback_default",
+    "answer": "I'm not sure about that specific question. Please check the Supplier Registration Manual or contact your Reliance Buyer for assistance. You can also check your registration status at https://supplierregistration.ril.com/"
+  }
+}

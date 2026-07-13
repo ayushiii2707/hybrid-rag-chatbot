@@ -1,0 +1,498 @@
+{
+  "metadata": {
+    "source_document": "Merchandise Supplier Add Delivery Location User Manual 30-07-2025.pdf",
+    "source_location": "SharePoint - MDMInternal / RRSR and NVR Portal",
+    "process": "Add Delivery Location for Merchandise (Trading) Supplier",
+    "portal_url": "https://supplierregistration.ril.com/",
+    "support_email": "rrsrportal@ril.com",
+    "approval_tat": "24 to 48 hours",
+    "classification": "Strictly for Internal Circulation Only",
+    "total_intents": 32,
+    "language": "en",
+    "version": "1.0"
+  },
+  "categories": [
+    "general",
+    "login_access",
+    "create_request",
+    "location_and_category",
+    "pan_details",
+    "gstin_details",
+    "contact_details",
+    "udyam_msme",
+    "fssai",
+    "bank_details",
+    "submission",
+    "status_check",
+    "support"
+  ],
+  "faqs": [
+    {
+      "intent": "process_purpose",
+      "category": "general",
+      "question": "What is the Add Delivery Location process for?",
+      "alternate_phrasings": [
+        "what does add delivery location do",
+        "purpose of delivery location module",
+        "why add delivery location",
+        "what is delivery location request"
+      ],
+      "answer": "The Add Delivery Location process allows registered Merchandise (Trading) Suppliers to add a delivery location for goods procured by Reliance Retail Ltd and its Group/Associate Companies. Articles meant for in-house consumption and Services are not supported by this application.",
+      "entities": []
+    },
+    {
+      "intent": "who_can_add_location",
+      "category": "general",
+      "question": "Who can add a delivery location?",
+      "alternate_phrasings": [
+        "eligibility for adding delivery location",
+        "can new vendors add delivery location",
+        "when can I add delivery location",
+        "prerequisites for delivery location"
+      ],
+      "answer": "Users can add a delivery location only after they receive their login credentials, which are issued once their registration request is approved by the respective Category Manager and Commercial Manager.",
+      "entities": [
+        {"type": "approver", "value": ["Category Manager", "Commercial Manager"]}
+      ]
+    },
+    {
+      "intent": "portal_link",
+      "category": "general",
+      "question": "What is the portal link?",
+      "alternate_phrasings": [
+        "where to login",
+        "supplier portal URL",
+        "RRSR portal link",
+        "delivery location portal"
+      ],
+      "answer": "You can access the portal at https://supplierregistration.ril.com/",
+      "entities": [{"type": "url", "value": "https://supplierregistration.ril.com/"}]
+    },
+    {
+      "intent": "process_steps_overview",
+      "category": "general",
+      "question": "What are the steps to add a delivery location?",
+      "alternate_phrasings": [
+        "list of steps",
+        "delivery location process flow",
+        "all steps in add delivery location",
+        "how many steps"
+      ],
+      "answer": "There are 11 steps: (1) Login, (2) Create New Request, (3) Select Location Type, (4) Select Product Category, (5) PAN Details, (6) GSTIN Details, (7) Contact Person Details, (8) MSME Details, (9) FSSAI Details, (10) Bank Details, and (11) Submit the Form.",
+      "entities": [{"type": "count", "value": "11"}]
+    },
+    {
+      "intent": "login_credentials",
+      "category": "login_access",
+      "question": "How do I get my login credentials?",
+      "alternate_phrasings": [
+        "first time login",
+        "create password",
+        "how to login first time",
+        "user id and password"
+      ],
+      "answer": "After your registration is approved, an email containing your user ID and a link to create your password is sent to you. Use these credentials to log in to the portal.",
+      "entities": []
+    },
+    {
+      "intent": "create_new_request",
+      "category": "create_request",
+      "question": "How do I create a new delivery location request?",
+      "alternate_phrasings": [
+        "raise delivery location request",
+        "add new delivery location",
+        "start a delivery location request",
+        "where is add delivery location button"
+      ],
+      "answer": "After logging in, click on 'Delivery Location' and then click on 'Add Delivery Location'. Fill the form with the appropriate vendor details.",
+      "entities": [{"type": "step", "value": "Step 2"}]
+    },
+    {
+      "intent": "location_type_selection",
+      "category": "location_and_category",
+      "question": "Which Location Type should I select?",
+      "alternate_phrasings": [
+        "what location type to choose",
+        "location type dropdown value",
+        "select distributor or other",
+        "correct location type"
+      ],
+      "answer": "Always select Location Type as 'Distributor' from the drop-down menu.",
+      "entities": [{"type": "fixed_value", "field": "Location Type", "value": "Distributor"}]
+    },
+    {
+      "intent": "product_category_selection",
+      "category": "location_and_category",
+      "question": "How do I select Product Category and Store Format?",
+      "alternate_phrasings": [
+        "choose product category",
+        "store format dropdown",
+        "which category to pick",
+        "vendor category selection"
+      ],
+      "answer": "From the drop-down, choose the vendor category under which you are registered. Then choose the appropriate Store Format (also under which you are registered) from its drop-down menu.",
+      "entities": []
+    },
+    {
+      "intent": "pan_mandatory",
+      "category": "pan_details",
+      "question": "Is PAN mandatory?",
+      "alternate_phrasings": [
+        "is PAN required for delivery location",
+        "PAN required for each category",
+        "do I need PAN"
+      ],
+      "answer": "Yes. PAN is mandatory for each category.",
+      "entities": []
+    },
+    {
+      "intent": "pan_validation_rules",
+      "category": "pan_details",
+      "question": "What are the PAN validation rules?",
+      "alternate_phrasings": [
+        "PAN format",
+        "valid PAN structure",
+        "PAN length and rules",
+        "how PAN should look"
+      ],
+      "answer": "PAN must follow these rules: (1) 10 characters long, (2) First 5 characters must be alphabets, (3) 4th character must be one of C, P, H, F, A, T, B, L, J, or G, (4) 6th to 9th characters must be numeric, (5) Last character must be an alphabet.",
+      "entities": [
+        {"type": "length", "value": "10"},
+        {"type": "allowed_4th_char", "value": "C, P, H, F, A, T, B, L, J, G"}
+      ]
+    },
+    {
+      "intent": "pan_4th_character_meaning",
+      "category": "pan_details",
+      "question": "What does the 4th character of PAN mean?",
+      "alternate_phrasings": [
+        "PAN entity type code",
+        "what does P or C mean in PAN",
+        "PAN 4th letter explanation"
+      ],
+      "answer": "The 4th character indicates the entity type: C - Company, P - Individual, H - HUF, F - Firm/LLP, A - AOP, T - Trust, B - BOI, L - Local Authority, J - Artificial Juridical Person, G - Government Agency.",
+      "entities": [
+        {"type": "code_map", "value": {"C": "Company", "P": "Individual", "H": "HUF", "F": "Firm/LLP", "A": "AOP", "T": "Trust", "B": "BOI", "L": "Local Authority", "J": "Artificial Juridical Person", "G": "Government Agency"}}
+      ]
+    },
+    {
+      "intent": "nsdl_pan_name",
+      "category": "pan_details",
+      "question": "What should I enter in the NSDL PAN Name field?",
+      "alternate_phrasings": [
+        "NSDL PAN name format",
+        "how to enter PAN name",
+        "PAN name Y flag",
+        "name as per NSDL"
+      ],
+      "answer": "Type the name on your PAN card exactly as maintained in NSDL. Ensure the 'Y' flag is displayed in the PAN name validation.",
+      "entities": [{"type": "validation_flag", "value": "Y"}]
+    },
+    {
+      "intent": "pan_upload_format",
+      "category": "pan_details",
+      "question": "What format should the PAN document be in?",
+      "alternate_phrasings": [
+        "PAN file type",
+        "upload PAN as PDF or JPG",
+        "E-PAN upload format"
+      ],
+      "answer": "Upload the scanned copy or E-PAN file of the vendor's PAN in PDF or JPG format.",
+      "entities": [{"type": "file_format", "value": ["PDF", "JPG"]}]
+    },
+    {
+      "intent": "proprietorship_documents",
+      "category": "pan_details",
+      "question": "What documents are needed for Proof of Proprietorship?",
+      "alternate_phrasings": [
+        "proprietorship firm documents",
+        "proof of proprietorship list",
+        "PAN P character documents",
+        "documents when vendor name differs from proprietor"
+      ],
+      "answer": "If the 4th PAN character is 'P' and the Vendor/Bank account name differs from the Proprietor's name, merge a Proof of Proprietorship document with the PAN copy and upload in the PAN document section. Accepted documents: (1) Shop & Establishment Certificate, (2) Confirmation letter from a scheduled Bank (RTGS mandate form not valid), (3) Service Tax Registration Certificate, (4) IEC Certificate, (5) Trade License, (6) Any Govt./Local authority certificate showing both firm and proprietor name, (7) UDYAM Registration Certificate, (8) GST Certificate.",
+      "entities": [
+        {"type": "trigger_condition", "value": "PAN 4th char = P"},
+        {"type": "document_list_count", "value": "8"}
+      ]
+    },
+    {
+      "intent": "gstin_autofetch",
+      "category": "gstin_details",
+      "question": "How is GSTIN populated?",
+      "alternate_phrasings": [
+        "GSTIN auto fetch",
+        "GSTIN field auto populate",
+        "GSTIN based on PAN and state",
+        "GSTIN editing"
+      ],
+      "answer": "Based on the PAN and State code you provided, the GSTIN for the respective state is automatically fetched into the GSTIN field for checking and editing if needed.",
+      "entities": []
+    },
+    {
+      "intent": "multiple_gstin_same_state",
+      "category": "gstin_details",
+      "question": "What if I have multiple GSTINs for the same state?",
+      "alternate_phrasings": [
+        "more than one GSTIN same state",
+        "vendor has multiple GSTINs",
+        "which GSTIN to use",
+        "multiple GSTIN scenario"
+      ],
+      "answer": "If you have multiple GSTINs for the same state, fill the correct GSTIN number and ensure it is supported by the GSTIN copy you upload.",
+      "entities": []
+    },
+    {
+      "intent": "gstin_state_match",
+      "category": "gstin_details",
+      "question": "Should GSTIN match the state address?",
+      "alternate_phrasings": [
+        "GSTIN state validation",
+        "GSTIN must match state",
+        "GSTIN and address state"
+      ],
+      "answer": "Yes. The GSTIN number must belong to the respective state as per the address section.",
+      "entities": []
+    },
+    {
+      "intent": "gst_registered_upload",
+      "category": "gstin_details",
+      "question": "What if the vendor is GST registered?",
+      "alternate_phrasings": [
+        "GSTIN certificate upload",
+        "vendor with GST registration",
+        "upload GSTIN copy"
+      ],
+      "answer": "If the vendor is GST registered, upload the scanned copy of the GSTIN certificate in the document field.",
+      "entities": []
+    },
+    {
+      "intent": "no_gst_declaration",
+      "category": "gstin_details",
+      "question": "What if the vendor is not GST registered?",
+      "alternate_phrasings": [
+        "no GST registration",
+        "vendor without GSTIN",
+        "no GSTIN declaration form",
+        "download No GST form"
+      ],
+      "answer": "If the vendor is not GST registered, upload the 'No GSTIN Declaration' form. You can download the template from the Download section on the top navigation bar of the portal.",
+      "entities": []
+    },
+    {
+      "intent": "proprietor_no_gst_address_proof",
+      "category": "gstin_details",
+      "question": "What address proof is needed for a Proprietorship/Individual without GST?",
+      "alternate_phrasings": [
+        "address proof for no GST",
+        "individual no GST documents",
+        "proprietor address proof list",
+        "supporting documents for No GST declaration"
+      ],
+      "answer": "For Proprietorship Firm or Individual vendors without GST registration, merge an address proof along with the No GST declaration. Accepted documents: (a) Water Bill, (b) Telephone bill (landline or postpaid mobile), (c) Electricity bill, (d) Income Tax Assessment Order, (e) Election Commission Photo ID card, (f) Proof of Gas Connection, (g) Rent Agreement, (h) Bank Account Passbook copy (first page with account name, number, and address).",
+      "entities": [{"type": "document_list_count", "value": "8"}]
+    },
+    {
+      "intent": "contact_person",
+      "category": "contact_details",
+      "question": "Whose contact details should I provide?",
+      "alternate_phrasings": [
+        "contact person details",
+        "who should be the contact",
+        "can I add Reliance employee contact",
+        "contact details rules"
+      ],
+      "answer": "Provide the details of your contact person. Reliance employee contact details are strictly prohibited.",
+      "entities": []
+    },
+    {
+      "intent": "udyam_format",
+      "category": "udyam_msme",
+      "question": "What is the UDYAM (MSME) number format?",
+      "alternate_phrasings": [
+        "MSME number format",
+        "UDYAM number structure",
+        "UDYAM validation rules"
+      ],
+      "answer": "Format: UDYAM-XX-XX-XXXXXXX. The document states it should be 16 characters; first 5 are 'UDYAM', next 2 are alphabetic letters (A-Z), next 2 are numeric digits (0-9), and the last 7 are numeric digits. Each part is separated by a hyphen.",
+      "entities": [
+        {"type": "format", "value": "UDYAM-XX-XX-XXXXXXX"},
+        {"type": "length_note", "value": "Document states 16 characters; verify against your certificate"}
+      ]
+    },
+    {
+      "intent": "udyam_date_of_issue",
+      "category": "udyam_msme",
+      "question": "What date do I enter in the UDYAM Date of Issue field?",
+      "alternate_phrasings": [
+        "UDYAM date of issue",
+        "MSME registration date entry",
+        "which UDYAM date to use"
+      ],
+      "answer": "Refer to the 'Date of UDYAM Registration' section on your UDYAM (MSME) certificate and select the matching date from the calendar in the 'Date of Issue' field.",
+      "entities": []
+    },
+    {
+      "intent": "udyam_validity_year",
+      "category": "udyam_msme",
+      "question": "How do I fill the UDYAM Validity Year fields?",
+      "alternate_phrasings": [
+        "UDYAM From and To dates",
+        "MSME validity period",
+        "to field 9999"
+      ],
+      "answer": "In the 'From' field, enter the latest classification date from the Enterprise Type section of your UDYAM certificate. In the 'To' field, enter 9999.",
+      "entities": [{"type": "fixed_value", "field": "To", "value": "9999"}]
+    },
+    {
+      "intent": "udyam_verification",
+      "category": "udyam_msme",
+      "question": "How can I verify my UDYAM number?",
+      "alternate_phrasings": [
+        "check UDYAM status",
+        "verify MSME online",
+        "UDYAM verification link"
+      ],
+      "answer": "You can verify your UDYAM number status at https://udyamregistration.gov.in/Udyam_Verify.aspx",
+      "entities": [{"type": "url", "value": "https://udyamregistration.gov.in/Udyam_Verify.aspx"}]
+    },
+    {
+      "intent": "udyam_upload_format",
+      "category": "udyam_msme",
+      "question": "What format should the UDYAM certificate be uploaded in?",
+      "alternate_phrasings": [
+        "UDYAM upload PDF or JPG",
+        "MSME certificate format",
+        "UDYAM file type"
+      ],
+      "answer": "Upload the scanned copy of the UDYAM (MSME) certificate in PDF or JPG format.",
+      "entities": [{"type": "file_format", "value": ["PDF", "JPG"]}]
+    },
+    {
+      "intent": "fssai_details",
+      "category": "fssai",
+      "question": "How do I fill FSSAI details?",
+      "alternate_phrasings": [
+        "FSSAI validation rules",
+        "FSSAI number format",
+        "FSSAI expiry date",
+        "FSSAI document upload"
+      ],
+      "answer": "Fill these FSSAI fields: License Type (select from available options), FSSAI Number (must be 14 numeric digits), Expiry Date (enter the certificate's expiry date), and FSSAI Document (upload scanned copy in PDF/JPG format).",
+      "entities": [
+        {"type": "fssai_number_length", "value": "14"},
+        {"type": "file_format", "value": ["PDF", "JPG"]}
+      ]
+    },
+    {
+      "intent": "fssai_status_check",
+      "category": "fssai",
+      "question": "How can I check the Active/Inactive status of my FSSAI license?",
+      "alternate_phrasings": [
+        "verify FSSAI license",
+        "FSSAI active status check",
+        "FoSCoS FBO search",
+        "FSSAI verification link"
+      ],
+      "answer": "You can check the Active/Inactive status of your FSSAI license at https://foscos.fssai.gov.in/ - go to the FBO search option, enter the FSSAI number, enter the captcha, and click Search.",
+      "entities": [{"type": "url", "value": "https://foscos.fssai.gov.in/"}]
+    },
+    {
+      "intent": "bank_details",
+      "category": "bank_details",
+      "question": "What bank details do I need to enter?",
+      "alternate_phrasings": [
+        "bank account fields",
+        "IFSC code field",
+        "bank document upload",
+        "bank details list"
+      ],
+      "answer": "Enter: Account Number (valid bank account number), IFSC Code (valid IFSC), Bank Name (auto-fetched from IFSC), Branch Name (auto-fetched from IFSC), Document Type (select used for bank verification), and Bank Document (upload scanned copy of the selected document).",
+      "entities": []
+    },
+    {
+      "intent": "register_without_bank",
+      "category": "bank_details",
+      "question": "Can I register a vendor without bank details?",
+      "alternate_phrasings": [
+        "register vendor no bank account",
+        "dummy bank details",
+        "skip bank details",
+        "no bank account scenario"
+      ],
+      "answer": "Yes. To register a vendor without bank details, fill Account Number as '123' and IFSC Code as 'IFSC0000123' as dummy values.",
+      "entities": [
+        {"type": "fixed_value", "field": "Account Number (dummy)", "value": "123"},
+        {"type": "fixed_value", "field": "IFSC Code (dummy)", "value": "IFSC0000123"}
+      ]
+    },
+    {
+      "intent": "epayment_mandate_template",
+      "category": "bank_details",
+      "question": "Where can I download the E-payment mandate form?",
+      "alternate_phrasings": [
+        "E-payment mandate template",
+        "bank mandate form download",
+        "download bank template"
+      ],
+      "answer": "You can download the E-payment mandate form template from the Download section on the top navigation bar of the portal.",
+      "entities": []
+    },
+    {
+      "intent": "submit_form",
+      "category": "submission",
+      "question": "How do I submit the request?",
+      "alternate_phrasings": [
+        "submit delivery location",
+        "final submit button",
+        "after filling form what next",
+        "request ID generation"
+      ],
+      "answer": "After filling all required fields, click the Submit button. A Request ID will be generated and displayed in a pop-up window. Please note this Request ID for future reference.",
+      "entities": [{"type": "step", "value": "Step 11"}]
+    },
+    {
+      "intent": "check_status",
+      "category": "status_check",
+      "question": "How do I check the status of my delivery location request?",
+      "alternate_phrasings": [
+        "track delivery location status",
+        "check vendor registration status",
+        "status report tab",
+        "where to see request status"
+      ],
+      "answer": "Click on the 'Status Report' tab, select 'Delivery Location' from the dropdown under 'Report Type', and click 'Search'. The status of your vendor registration will be displayed.",
+      "entities": []
+    },
+    {
+      "intent": "approval_tat",
+      "category": "status_check",
+      "question": "What is the TAT for approval?",
+      "alternate_phrasings": [
+        "how long does approval take",
+        "delivery location approval time",
+        "TAT for request ID",
+        "when will I get approval"
+      ],
+      "answer": "Once the Request ID is generated, the turnaround time (TAT) for approval is 24 to 48 hours.",
+      "entities": [{"type": "tat", "value": "24 to 48 hours"}]
+    },
+    {
+      "intent": "support_contact",
+      "category": "support",
+      "question": "Who do I contact for login or technical issues?",
+      "alternate_phrasings": [
+        "support email",
+        "login issue help",
+        "technical issue contact",
+        "RRSR portal support"
+      ],
+      "answer": "For any login-related or technical issues, contact rrsrportal@ril.com",
+      "entities": [{"type": "email", "value": "rrsrportal@ril.com"}]
+    }
+  ],
+  "fallback": {
+    "intent": "fallback_default",
+    "answer": "I'm not sure about that specific question. Please refer to the Add Delivery Location User Manual, contact your Reliance Buyer, or reach out to rrsrportal@ril.com for assistance."
+  }
+}
