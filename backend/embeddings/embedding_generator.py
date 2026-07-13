@@ -44,7 +44,7 @@ class EmbeddingGenerator:
         # 2. Initialize SentenceTransformer
         logger.info(f"Initializing local embedding model '{self.model_name}'...")
         try:
-            self.model = SentenceTransformer(self.model_name)
+            self.model = SentenceTransformer(self.model_name, device="cpu")
             logger.info(f"Local embedding model '{self.model_name}' loaded successfully.")
         except Exception as e:
             logger.critical(f"Failed to load sentence-transformers model '{self.model_name}': {e}")

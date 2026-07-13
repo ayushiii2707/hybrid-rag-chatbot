@@ -29,6 +29,15 @@ class KeywordRanker:
         # Initialize scores to 0.0 for all candidates
         scores = {cid: 0.0 for cid in candidate_chunk_ids}
 
+        import re
+        words = re.findall(r'\b\w+\b', query)
+        if not words:
+            return scores
+
+        # Build: plainto_tsquery('english', :w0) || plainto_tsquery('english', :w1) ...
+        query_parts = [f"plainto_tsquery('english', :w{i})" for i, _ in enumerate(words)]
+        tsquery_sql = " || ".join(query_parts)
+
         # Every modification includes this explanatory comment:
         # "Replaced the local in-memory BM25 ranker with PostgreSQL Full-Text Search ts_rank_cd to avoid RAM bloat and startup overhead"
         from sqlalchemy import text
@@ -36,13 +45,15 @@ class KeywordRanker:
         
         db = SessionLocal()
         try:
-            # Query ts_rank_cd for the candidate chunks
             sql = text(
-                "SELECT chunk_id, ts_rank_cd(tsv_content, plainto_tsquery('english', :query)) as rank "
+                f"SELECT chunk_id, ts_rank_cd(tsv_content, {tsquery_sql}) as rank "
                 "FROM chunks "
                 "WHERE chunk_id = ANY(:candidate_ids)"
             )
-            results = db.execute(sql, {"query": query, "candidate_ids": candidate_chunk_ids}).all()
+            params = {f"w{i}": w for i, w in enumerate(words)}
+            params["candidate_ids"] = candidate_chunk_ids
+            
+            results = db.execute(sql, params).all()
             
             raw_scores = {}
             for chunk_id, rank in results:

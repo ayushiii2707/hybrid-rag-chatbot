@@ -74,21 +74,12 @@ class ResponseFormatter:
 
     def __init__(self) -> None:
         self.chunks_by_id = {}
-        # Try to load metadata.json to have access to full chunk texts
         try:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            metadata_path = os.path.abspath(os.path.join(current_dir, "..", "embeddings", "metadata.json"))
-            if os.path.exists(metadata_path):
-                with open(metadata_path, "r", encoding="utf-8") as f:
-                    metadata_list = json.load(f)
-                    for item in metadata_list:
-                        if "chunk_id" in item:
-                            self.chunks_by_id[item["chunk_id"]] = item
-                logger.info(f"Loaded {len(self.chunks_by_id)} chunks from metadata index.")
-            else:
-                logger.warning(f"Metadata index not found at {metadata_path}.")
+            from backend.retrieval_intelligence.hybrid_retriever import LazyChunksByIdMap
+            self.chunks_by_id = LazyChunksByIdMap()
+            logger.info("Initialized ResponseFormatter with LazyChunksByIdMap successfully.")
         except Exception as e:
-            logger.error(f"Failed to load metadata index in ResponseFormatter: {e}")
+            logger.error(f"Failed to import LazyChunksByIdMap in ResponseFormatter: {e}")
 
     def format_response(
         self,
