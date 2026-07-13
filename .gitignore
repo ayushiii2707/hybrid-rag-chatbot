@@ -56,3 +56,22 @@ Thumbs.db
 *.sln
 *.swp
 
+# Python virtual environments (additional common patterns)
+env/
+.env/
+htmlcov/
+.tox/
+.nox/
+.cache/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Poetry/Pipenv lock files (if you decide to use them later)
+Pipfile.lock
+poetry.lock
+
+# Vite / Frontend build artifacts (extra fallback)
+*.local
+.replit
+
